@@ -1,19 +1,19 @@
 import {Column, Entity, OneToMany, PrimaryGeneratedColumn} from "typeorm";
-import {UserSubscription} from "./user-tariff.entity";
+import {UserTariff} from "./user-tariff.entity";
 
-export enum SubscriptionType {
+export enum TariffType {
     LITE = 'LITE',
     PRO = 'PRO',
     UNLIMITED = 'UNLIMITED'
 }
 
-@Entity('subscription')
-export class Subscription {
+@Entity('tariff')
+export class Tariff {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({type: 'enum', enum: SubscriptionType, default: SubscriptionType.LITE})
-    type: SubscriptionType;
+    @Column({type: 'enum', enum: TariffType, default: TariffType.LITE})
+    type: TariffType;
 
     @Column({type: 'text', nullable: true})
     description: string;
@@ -36,6 +36,6 @@ export class Subscription {
     @Column({type: 'boolean', default: true})
     isActive: boolean;
 
-    @OneToMany(() => UserSubscription, (userSub) => userSub.subscription)
-    userSubscriptions: UserSubscription[];
+    @OneToMany(() => UserTariff, (userSub) => userSub.tariff)
+    userTariffs: UserTariff[];
 }
