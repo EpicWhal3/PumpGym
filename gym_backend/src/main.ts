@@ -6,15 +6,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.enableCors({
-    origin: [`http://localhost:3000`],
+    origin: [
+      `postgresql://gym_db_kxtx_user:e7yessMS6lKch7R8Ozot7lbE7DYkqCXU@dpg-d6rr62vafjfc73ejur20-a/gym_db_kxtx`,
+      `http://localhost:3000`,
+    ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   });
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
+  app.setGlobalPrefix("api");
+  await app.listen(process.env.PORT ?? 3000, "0.0.0.0");
+  console.log(`Server running on port ${process.env.PORT ?? 3000}`);
 }
 
 bootstrap()
