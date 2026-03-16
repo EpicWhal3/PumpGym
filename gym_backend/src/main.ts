@@ -11,11 +11,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
+  app.setGlobalPrefix("api");
+  await app.listen(process.env.PORT ?? 3000, "0.0.0.0");
+  console.log(`Server running on port ${process.env.PORT ?? 3000}`);
 }
+
 bootstrap()
   .then(() => console.log("Bootstrap completed"))
-  .catch((e) => console.error("Bootstrap failed", e));
+  .catch((err) => console.error("Bootstrap failed", err));
