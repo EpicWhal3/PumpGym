@@ -44,10 +44,6 @@ import {
         ],
         synchronize: true,
         logging: configService.get("NODE_ENV") === "development",
-        ssl:
-          configService.get("NODE_ENV") === "production"
-            ? { rejectUnauthorized: false }
-            : false,
       }),
     }),
   ],
