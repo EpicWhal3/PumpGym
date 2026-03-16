@@ -1,54 +1,53 @@
-import {Module} from '@nestjs/common';
-import {AppController} from './app.controller';
-import {AppService} from './app.service';
-import {ConfigModule, ConfigService} from '@nestjs/config';
-import {TypeOrmModule} from '@nestjs/typeorm';
-import {TerminusModule} from '@nestjs/terminus';
-import {HealthController} from './health/health.controller';
+import { Module } from "@nestjs/common";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { TerminusModule } from "@nestjs/terminus";
+import { HealthController } from "./health/health.controller";
 
 import {
-    User,
-    Trainer,
-    Subscription,
-    UserSubscription,
-    TimetableEntry,
-    Booking,
-    ClassEnrollment,
-} from './entities';
+  User,
+  Trainer,
+  Tariff,
+  UserTariff,
+  TimetableEntry,
+  Booking,
+  ClassEnrollment,
+} from "./entities";
 
 @Module({
-    imports: [
-        TerminusModule,
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: '../.env'
-        }),
-        TypeOrmModule.forRootAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                type: 'postgres',
-                host: configService.get('DB_HOST'),
-                port: configService.get<number>('DB_PORT'),
-                username: configService.get('DB_USER'),
-                password: configService.get('DB_PASSWORD'),
-                database: configService.get('DB_NAME'),
-                entities: [
-                    User,
-                    Trainer,
-                    Subscription,
-                    UserSubscription,
-                    TimetableEntry,
-                    Booking,
-                    ClassEnrollment
-                ],
-                synchronize: true,
-                logging: configService.get('NODE_ENV') === 'development'
-            })
-        })
-    ],
-    controllers: [AppController, HealthController],
-    providers: [AppService],
+  imports: [
+    TerminusModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: "../.env",
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: "postgres",
+        host: configService.get("DB_HOST"),
+        port: configService.get<number>("DB_PORT"),
+        username: configService.get("DB_USER"),
+        password: configService.get("DB_PASSWORD"),
+        database: configService.get("DB_NAME"),
+        entities: [
+          User,
+          Trainer,
+          Tariff,
+          UserTariff,
+          TimetableEntry,
+          Booking,
+          ClassEnrollment,
+        ],
+        synchronize: true,
+        logging: configService.get("NODE_ENV") === "development",
+      }),
+    }),
+  ],
+  controllers: [AppController, HealthController],
+  providers: [AppService],
 })
-export class AppModule {
-}
+export class AppModule {}
