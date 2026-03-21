@@ -8,12 +8,7 @@ import {
 } from "typeorm";
 import { TimetableEntry } from "./timetable-entry.entity";
 import { User } from "./user.entity";
-
-export enum EnrollmentStatus {
-  CONFIRMED = "confirmed",
-  CANCELLED = "cancelled",
-  ATTENDED = "attended",
-}
+import { EnrollmentStatus } from "../common/enums/enrollments-status.enum";
 
 @Entity("class_enrollments")
 export class ClassEnrollment {

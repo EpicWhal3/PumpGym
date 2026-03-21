@@ -15,10 +15,16 @@ import {
   Booking,
   ClassEnrollment,
 } from "./entities";
+import { BookingsModule } from "./modules/bookings/bookings.module";
+import { EnrollmentModule } from "./modules/enrollments/enrollment.module";
+import { AssignTariffModule } from "./modules/user-tariff/assign-tariff.module";
 
 @Module({
   imports: [
     TerminusModule,
+    BookingsModule,
+    EnrollmentModule,
+    AssignTariffModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: "../.env",

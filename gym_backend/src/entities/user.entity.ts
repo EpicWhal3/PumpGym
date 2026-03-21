@@ -2,19 +2,13 @@ import {
   Column,
   Entity,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
 
 import { Booking } from "./booking.entity";
 import { UserTariff } from "./user-tariff.entity";
 import { ClassEnrollment } from "./class-enrollment.entity";
-
-export enum UserRole {
-  CLIENT = "CLIENT",
-  ADMIN = "ADMIN",
-  TRAINER = "TRAINER",
-}
+import { UserRole } from "../common/enums/user-roles.enum";
 
 @Entity("users")
 export class User {
@@ -52,8 +46,10 @@ export class User {
   @OneToMany(() => Booking, (booking) => booking.user)
   bookings: Booking[];
 
-  @OneToOne(() => UserTariff, (sub) => sub.userId, { nullable: true })
-  tariff: UserTariff;
+  @OneToMany(() => UserTariff, (userTariff) => userTariff.user, {
+    nullable: true,
+  })
+  tariffs: UserTariff[];
 
   @OneToMany(() => ClassEnrollment, (enrollment) => enrollment.user)
   enrollments: ClassEnrollment[];

@@ -1,11 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { UserTariff } from "./user-tariff.entity";
-
-export enum TariffType {
-  LITE = "LITE",
-  PRO = "PRO",
-  UNLIMITED = "UNLIMITED",
-}
+import { TariffType } from "../common/enums/tariff-types.enum";
 
 @Entity("tariff")
 export class Tariff {

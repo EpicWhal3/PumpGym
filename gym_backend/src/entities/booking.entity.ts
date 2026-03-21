@@ -7,20 +7,8 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { User } from "./user.entity";
-
-export enum ServiceType {
-  TRIAL = "trial",
-  CONSULTATION = "consultation",
-  PERSONAL = "personal",
-  GROUP = "group",
-}
-
-export enum BookingStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
-  CANCELLED = "cancelled",
-  COMPLETED = "completed",
-}
+import { ServiceType } from "../common/enums/service-types.enum";
+import { BookingStatus } from "../common/enums/booking-status.enum";
 
 @Entity("bookings")
 export class Booking {

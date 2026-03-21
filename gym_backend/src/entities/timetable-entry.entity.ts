@@ -8,6 +8,7 @@ import {
 } from "typeorm";
 import { Trainer } from "./trainer.entity";
 import { ClassEnrollment } from "./class-enrollment.entity";
+import { EntryStatus } from "../common/enums/entry-status.enum";
 
 export enum WorkoutType {
   YOGA = "yoga",
@@ -16,12 +17,6 @@ export enum WorkoutType {
   CARDIO = "cardio",
   STRETCHING = "stretching",
   CROSSFIT = "crossfit",
-}
-
-export enum EntryStatus {
-  AVAILABLE = "available",
-  BOOKED = "booked",
-  CANCELLED = "cancelled",
 }
 
 @Entity("timetable_entries")
