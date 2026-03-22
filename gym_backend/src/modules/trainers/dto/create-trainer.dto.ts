@@ -48,7 +48,7 @@ export class CreateTrainerDto {
   })
   @IsString()
   @IsOptional()
-  photo?: string;
+  photoUrl?: string;
 
   @ApiPropertyOptional({
     description: "Рейтинг (0-5)",
@@ -70,7 +70,7 @@ export class CreateTrainerDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  reviewsCount?: number;
+  reviews?: number;
 
   @ApiPropertyOptional({
     description: "Активен ли тренер",

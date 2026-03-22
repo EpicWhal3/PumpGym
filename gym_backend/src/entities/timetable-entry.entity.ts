@@ -9,15 +9,7 @@ import {
 import { Trainer } from "./trainer.entity";
 import { ClassEnrollment } from "./class-enrollment.entity";
 import { EntryStatus } from "../common/enums/entry-status.enum";
-
-export enum WorkoutType {
-  YOGA = "yoga",
-  HIIT = "hiit",
-  STRENGTH = "strength",
-  CARDIO = "cardio",
-  STRETCHING = "stretching",
-  CROSSFIT = "crossfit",
-}
+import { WorkoutType } from "../common/enums/workout-types.enum";
 
 @Entity("timetable_entries")
 export class TimetableEntry {
@@ -26,6 +18,9 @@ export class TimetableEntry {
 
   @Column({ type: "enum", enum: WorkoutType })
   type: WorkoutType;
+
+  @Column({ type: "uuid", name: "trainerId" })
+  trainerId: string;
 
   @ManyToOne(() => Trainer, (trainer) => trainer.timetableEntries)
   @JoinColumn({ name: "trainerId" })

@@ -81,11 +81,11 @@ export class CreateTimetableEntryDto {
 
   @ApiPropertyOptional({
     description: "Статус занятия",
-    enum: ["available", "full", "cancelled"],
+    enum: EntryStatus,
     default: EntryStatus.AVAILABLE,
   })
   @IsOptional()
-  @IsEnum(["available", "full", "cancelled"])
+  @IsEnum(EntryStatus)
   status?: "available" | "full" | "cancelled";
 
   @ApiPropertyOptional({

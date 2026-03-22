@@ -15,7 +15,7 @@ export class Booking {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ManyToOne(() => User, (user) => user.bookings, { nullable: false })
+  @ManyToOne(() => User, (user) => user.bookings, { nullable: true })
   @JoinColumn({ name: "userId" })
   user: User;
 
@@ -43,6 +43,6 @@ export class Booking {
   @CreateDateColumn({ type: "timestamp" })
   createdAt: Date;
 
-  @Column({ type: "text" })
+  @Column({ type: "text", nullable: true })
   notes: string;
 }

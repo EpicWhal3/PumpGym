@@ -8,7 +8,7 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
-  Put,
+  Patch,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -75,7 +75,18 @@ export class BookingsController {
     return await this.bookingsService.findOne(id);
   }
 
-  @Put(":id/status")
+  @Get("user/:userId")
+  @ApiOperation({ summary: "Получить заявки пользователя" })
+  @ApiParam({ name: "userId", description: "UUID пользователя" })
+  @ApiResponse({ status: 200, description: "Список заявок пользователя" })
+  @ApiBearerAuth()
+  async findByUser(
+    @Param("userId", ParseUUIDPipe) userId: string,
+  ): Promise<Booking[]> {
+    return await this.bookingsService.findByUser(userId);
+  }
+
+  @Patch(":id/status")
   @ApiOperation({ summary: "Изменить статус заявки" })
   @ApiParam({ name: "id", description: "UUID заявки" })
   @ApiResponse({

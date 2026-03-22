@@ -9,7 +9,7 @@ import {
   ParseUUIDPipe,
   Query,
   HttpCode,
-  HttpStatus
+  HttpStatus,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -95,5 +95,33 @@ export class TrainersController {
   @ApiBearerAuth()
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.trainersService.remove(id);
+  }
+
+  @Get("top-rated")
+  @ApiOperation({ summary: "Получить топ тренеров по рейтингу" })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Количество (по умолчанию 5)",
+  })
+  @ApiResponse({ status: 200, description: "Топ тренеров" })
+  async getTopRated(@Query("limit") limit?: number): Promise<Trainer[]> {
+    return await this.trainersService.getTopRated(limit ?? 5);
+  }
+
+  // ← ДОБАВЛЕНО: поиск по специализации
+  @Get("specialty/:specialty")
+  @ApiOperation({ summary: "Найти тренеров по специализации" })
+  @ApiParam({
+    name: "specialty",
+    description: "Специализация",
+    example: "Йога",
+  })
+  @ApiResponse({ status: 200, description: "Список тренеров" })
+  async findBySpecialty(
+    @Param("specialty") specialty: string,
+  ): Promise<Trainer[]> {
+    return await this.trainersService.findBySpecialty(specialty);
   }
 }

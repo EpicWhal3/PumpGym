@@ -45,39 +45,23 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: "Получить список пользователей" })
-  @ApiResponse({
-    status: 200,
-    description: "Список пользователей",
-    type: [User],
-  })
+  @ApiResponse({ status: 200, description: "Список пользователей" })
   @ApiQuery({ name: "role", required: false, enum: UserRole })
   @ApiQuery({ name: "isActive", required: false, type: Boolean })
   @ApiQuery({ name: "page", required: false, type: Number, default: 1 })
   @ApiQuery({ name: "limit", required: false, type: Number, default: 10 })
   async findAll(
     @Query("role") role?: UserRole,
-    @Query("isActive") isActive?: boolean,
+    @Query("isActive") isActive?: string, // ← query params всегда строки
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ): Promise<User[]> {
-    return await this.usersService.findAll(
-      { role, isActive: isActive == true },
-      page,
-      limit,
-    );
-  }
+    // ← Исправлено: корректный парсинг boolean из строки
+    const filters: { role?: UserRole; isActive?: boolean } = {};
+    if (role) filters.role = role;
+    if (isActive !== undefined) filters.isActive = isActive === "true";
 
-  @Get(":id")
-  @ApiOperation({ summary: "Получить пользователя по ID" })
-  @ApiParam({ name: "id", description: "UUID пользователя" })
-  @ApiResponse({
-    status: 200,
-    description: "Пользователь найден",
-    type: User,
-  })
-  @ApiResponse({ status: 404, description: "Пользователь не найден" })
-  async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<User> {
-    return await this.usersService.findOne(id);
+    return await this.usersService.findAll(filters, +page, +limit);
   }
 
   @Get("email/:email")
@@ -91,6 +75,31 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "Пользователь не найден" })
   async findByEmail(@Param("email") email: string): Promise<User | null> {
     return await this.usersService.findByEmail(email);
+  }
+
+  @Get("role/:role")
+  @ApiOperation({ summary: "Получить пользователей по роли" })
+  @ApiParam({ name: "role", description: "Роль пользователя", enum: UserRole })
+  @ApiResponse({
+    status: 200,
+    description: "Список пользователей",
+    type: [User],
+  })
+  async findByRole(@Param("role") role: UserRole): Promise<User[]> {
+    return await this.usersService.findByRole(role);
+  }
+
+  @Get(":id")
+  @ApiOperation({ summary: "Получить пользователя по ID" })
+  @ApiParam({ name: "id", description: "UUID пользователя" })
+  @ApiResponse({
+    status: 200,
+    description: "Пользователь найден",
+    type: User,
+  })
+  @ApiResponse({ status: 404, description: "Пользователь не найден" })
+  async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<User> {
+    return await this.usersService.findOne(id);
   }
 
   @Patch(":id")
@@ -129,17 +138,5 @@ export class UsersController {
   @ApiBearerAuth()
   async hardDelete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.usersService.hardDelete(id);
-  }
-
-  @Get("role/:role")
-  @ApiOperation({ summary: "Получить пользователей по роли" })
-  @ApiParam({ name: "role", description: "Роль пользователя", enum: UserRole })
-  @ApiResponse({
-    status: 200,
-    description: "Список пользователей",
-    type: [User],
-  })
-  async findByRole(@Param("role") role: UserRole): Promise<User[]> {
-    return await this.usersService.findByRole(role);
   }
 }

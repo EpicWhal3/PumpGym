@@ -59,7 +59,7 @@ export class AssignTariffService {
   private async deactivateActiveTariff(userId: string): Promise<void> {
     const activeTariffs = await this.userTariffRepository.find({
       where: {
-        user: { id: userId },
+        userId, // ← используем FK-столбец
         status: TariffState.ACTIVE,
       },
     });
@@ -76,22 +76,30 @@ export class AssignTariffService {
   async getActiveTariff(userId: string): Promise<UserTariff | null> {
     const now = new Date();
 
-    const tariff = await this.userTariffRepository.findOne({
+    // ← Сначала проверяем просроченные тарифы и деактивируем
+    const expiredTariffs = await this.userTariffRepository
+      .createQueryBuilder("ut")
+      .where("ut.userId = :userId", { userId })
+      .andWhere("ut.status = :status", { status: TariffState.ACTIVE })
+      .andWhere("ut.endDate < :now", { now })
+      .getMany();
+
+    if (expiredTariffs.length > 0) {
+      for (const t of expiredTariffs) {
+        t.status = TariffState.EXPIRED;
+      }
+      await this.userTariffRepository.save(expiredTariffs);
+    }
+
+    // ← Теперь ищем реально активный
+    return await this.userTariffRepository.findOne({
       where: {
-        user: { id: userId },
+        userId,
         status: TariffState.ACTIVE,
         endDate: MoreThanOrEqual(now),
       },
       relations: ["tariff"],
     });
-
-    if (tariff && tariff.endDate < now) {
-      tariff.status = TariffState.EXPIRED;
-      await this.userTariffRepository.save(tariff);
-      return null;
-    }
-
-    return tariff;
   }
 
   async findByUser(userId: string): Promise<UserTariff[]> {
@@ -134,7 +142,7 @@ export class AssignTariffService {
     }
   }
 
-  async suspendSubscription(id: string): Promise<UserTariff> {
+  async suspendTariff(id: string): Promise<UserTariff> {
     const tariff = await this.userTariffRepository.findOne({
       where: { id },
     });
@@ -153,7 +161,7 @@ export class AssignTariffService {
     return await this.userTariffRepository.save(tariff);
   }
 
-  async activateSubscription(id: string): Promise<UserTariff> {
+  async activateTariff(id: string): Promise<UserTariff> {
     const tariff = await this.userTariffRepository.findOne({
       where: { id },
     });
@@ -171,21 +179,21 @@ export class AssignTariffService {
   }
 
   async findOne(id: string): Promise<UserTariff> {
-    const subscription = await this.userTariffRepository.findOne({
+    const tariff = await this.userTariffRepository.findOne({
       where: { id },
-      relations: ["subscription", "user"],
+      relations: ["tariff", "user"],
     });
 
-    if (!subscription) {
+    if (!tariff) {
       throw new NotFoundException("Подписка не найдена");
     }
 
-    return subscription;
+    return tariff;
   }
 
   async remove(id: string): Promise<void> {
-    const subscription = await this.findOne(id);
-    subscription.status = TariffState.EXPIRED;
-    await this.userTariffRepository.save(subscription);
+    const tariff = await this.findOne(id);
+    tariff.status = TariffState.EXPIRED;
+    await this.userTariffRepository.save(tariff);
   }
 }

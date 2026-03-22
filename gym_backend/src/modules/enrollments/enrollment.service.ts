@@ -21,6 +21,7 @@ import { CreateEnrollmentDto } from "./dto/create-enrollment.dto";
 import { EnrollmentStatus } from "../../common/enums/enrollments-status.enum";
 import { EntryStatus } from "../../common/enums/entry-status.enum";
 import { TariffState } from "../../common/enums/tariff-status.enum";
+import { TimetableService } from "../timetable/timetable.service";
 
 @Injectable()
 export class EnrollmentService {
@@ -29,6 +30,7 @@ export class EnrollmentService {
     private enrollmentRepository: Repository<ClassEnrollment>,
     @InjectRepository(TimetableEntry)
     private timetableRepository: Repository<TimetableEntry>,
+    private timetableService: TimetableService,
     private dataSource: DataSource,
   ) {}
 
@@ -48,6 +50,7 @@ export class EnrollmentService {
       if (!user) {
         throw new NotFoundException("Пользователь не найден");
       }
+
       const entry = await queryRunner.manager.findOne(TimetableEntry, {
         where: { id: timetableEntryId },
         relations: ["trainer"],
@@ -57,10 +60,9 @@ export class EnrollmentService {
       }
 
       if (entry.status !== EntryStatus.AVAILABLE) {
-        throw new BadRequestException(
-          "`Запись невозможна: занятие ${entry.status === 'full' ? " +
-            "'заполнено' : 'отменено'}`,",
-        );
+        const reason =
+          entry.status === EntryStatus.FULL ? "заполнено" : "отменено";
+        throw new BadRequestException(`Запись невозможна: занятие ${reason}`);
       }
 
       if (entry.enrolled >= entry.capacity) {
@@ -73,6 +75,7 @@ export class EnrollmentService {
           where: {
             user: { id: userId },
             timetableEntry: { id: timetableEntryId },
+            status: EnrollmentStatus.CONFIRMED,
           },
         },
       );
@@ -89,13 +92,15 @@ export class EnrollmentService {
       });
       await queryRunner.manager.save(enrollment);
 
-      entry.enrolled += 1;
-
+      await this.timetableService.incrementEnrolled(
+        timetableEntryId,
+        queryRunner.manager,
+      );
       if (entry.enrolled >= entry.capacity) {
         entry.status = EntryStatus.FULL;
       }
-
       await queryRunner.manager.save(entry);
+
       await queryRunner.commitTransaction();
       return enrollment;
     } catch (error) {
@@ -114,7 +119,7 @@ export class EnrollmentService {
 
     const activeTariff = await manager.findOne(UserTariff, {
       where: {
-        user: { id: userId },
+        userId,
         status: TariffState.ACTIVE,
         endDate: MoreThanOrEqual(now),
       },
@@ -146,8 +151,12 @@ export class EnrollmentService {
     enrollment.status = EnrollmentStatus.CANCELLED;
     await this.enrollmentRepository.save(enrollment);
 
-    enrollment.timetableEntry.enrolled -= 1;
-    enrollment.timetableEntry.status = EntryStatus.AVAILABLE;
+    await this.timetableService.decrementEnrolled(enrollment.timetableEntry.id);
+    if (
+      enrollment.timetableEntry.enrolled < enrollment.timetableEntry.capacity
+    ) {
+      enrollment.timetableEntry.status = EntryStatus.AVAILABLE;
+    }
     await this.timetableRepository.save(enrollment.timetableEntry);
   }
 
@@ -177,6 +186,12 @@ export class EnrollmentService {
       throw new NotFoundException("Запись не найдена");
     }
 
+    if (enrollment.status !== EnrollmentStatus.CONFIRMED) {
+      throw new BadRequestException(
+        "Отметить посещение можно только для подтверждённой записи",
+      );
+    }
+
     enrollment.status = EnrollmentStatus.ATTENDED;
     return await this.enrollmentRepository.save(enrollment);
   }
@@ -191,7 +206,7 @@ export class EnrollmentService {
   async findOne(id: string): Promise<ClassEnrollment> {
     const enrollment = await this.enrollmentRepository.findOne({
       where: { id },
-      relations: ["user", "timetableEntry"],
+      relations: ["user", "timetableEntry", "timetableEntry.trainer"],
     });
 
     if (!enrollment) {

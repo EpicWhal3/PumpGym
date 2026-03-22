@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -16,6 +17,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiBearerAuth,
+  ApiQuery,
 } from "@nestjs/swagger";
 import { TariffsService } from "./tariff.service";
 import { CreateTariffDto } from "./dto/create-tariff.dto";
@@ -36,9 +38,7 @@ export class TariffController {
   })
   @ApiResponse({ status: 400, description: "Некорректные данные" })
   @ApiBearerAuth()
-  async create(
-    @Body() createTariffDto: CreateTariffDto,
-  ): Promise<Tariff> {
+  async create(@Body() createTariffDto: CreateTariffDto): Promise<Tariff> {
     return await this.tariffsService.create(createTariffDto);
   }
 
@@ -49,8 +49,15 @@ export class TariffController {
     description: "Список тарифов",
     type: [Tariff],
   })
-  async findAll(): Promise<Tariff[]> {
-    return await this.tariffsService.findAll();
+  @ApiQuery({
+    name: "activeOnly",
+    required: false,
+    type: Boolean,
+    description: "Только активные тарифы (по умолчанию true)",
+  })
+  async findAll(@Query("activeOnly") activeOnly?: string): Promise<Tariff[]> {
+    const onlyActive = activeOnly !== "false"; // ← query params = строки
+    return await this.tariffsService.findAll(onlyActive);
   }
 
   @Get(":id")

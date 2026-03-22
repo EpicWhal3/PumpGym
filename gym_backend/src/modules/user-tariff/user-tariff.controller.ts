@@ -25,9 +25,7 @@ import { UserTariff } from "../../entities";
 @ApiTags("user-tariff")
 @Controller("user-tariff")
 export class UserTariffController {
-  constructor(
-    private readonly userTariffService: AssignTariffService,
-  ) {}
+  constructor(private readonly userTariffService: AssignTariffService) {}
 
   @Post()
   @ApiOperation({ summary: "Назначить тариф пользователю" })
@@ -42,12 +40,8 @@ export class UserTariffController {
     description: "Пользователь или тариф не найдены",
   })
   @ApiBearerAuth()
-  async assign(
-    @Body() assignSubscriptionDto: AssignTariffDto,
-  ): Promise<UserTariff> {
-    return await this.userTariffService.assignTariff(
-      assignSubscriptionDto,
-    );
+  async assign(@Body() assignTariffDto: AssignTariffDto): Promise<UserTariff> {
+    return await this.userTariffService.assignTariff(assignTariffDto);
   }
 
   @Get()
@@ -59,9 +53,7 @@ export class UserTariffController {
   })
   @ApiQuery({ name: "userId", required: true, description: "ID пользователя" })
   @ApiBearerAuth()
-  async findByUser(
-    @Query("userId") userId: string,
-  ): Promise<UserTariff[]> {
+  async findByUser(@Query("userId") userId: string): Promise<UserTariff[]> {
     return await this.userTariffService.findByUser(userId);
   }
 
@@ -75,10 +67,18 @@ export class UserTariffController {
   @ApiResponse({ status: 404, description: "Нет активной подписки" })
   @ApiQuery({ name: "userId", required: true, description: "ID пользователя" })
   @ApiBearerAuth()
-  async getActive(
-    @Query("userId") userId: string,
-  ): Promise<UserTariff | null> {
+  async getActive(@Query("userId") userId: string): Promise<UserTariff | null> {
     return await this.userTariffService.getActiveTariff(userId);
+  }
+
+  @Get(":id")
+  @ApiOperation({ summary: "Получить подписку по ID" })
+  @ApiParam({ name: "id", description: "UUID подписки" })
+  @ApiResponse({ status: 200, description: "Подписка найдена" })
+  @ApiResponse({ status: 404, description: "Подписка не найдена" })
+  @ApiBearerAuth()
+  async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<UserTariff> {
+    return await this.userTariffService.findOne(id);
   }
 
   @Post(":id/renew")
@@ -95,11 +95,8 @@ export class UserTariffController {
     @Param("id", ParseUUIDPipe) id: string,
     @Query("tariffId") tariffId: string,
   ): Promise<UserTariff> {
-    const subscription = await this.userTariffService.findOne(id);
-    return await this.userTariffService.renewTariff(
-      subscription.userId,
-      tariffId,
-    );
+    const tariff = await this.userTariffService.findOne(id);
+    return await this.userTariffService.renewTariff(tariff.userId, tariffId);
   }
 
   @Post(":id/suspend")
@@ -112,10 +109,8 @@ export class UserTariffController {
   })
   @ApiResponse({ status: 400, description: "Нельзя заморозить" })
   @ApiBearerAuth()
-  async suspend(
-    @Param("id", ParseUUIDPipe) id: string,
-  ): Promise<UserTariff> {
-    return await this.userTariffService.suspendSubscription(id);
+  async suspend(@Param("id", ParseUUIDPipe) id: string): Promise<UserTariff> {
+    return await this.userTariffService.suspendTariff(id);
   }
 
   @Post(":id/activate")
@@ -128,10 +123,8 @@ export class UserTariffController {
   })
   @ApiResponse({ status: 400, description: "Тариф не заморожена" })
   @ApiBearerAuth()
-  async activate(
-    @Param("id", ParseUUIDPipe) id: string,
-  ): Promise<UserTariff> {
-    return await this.userTariffService.activateSubscription(id);
+  async activate(@Param("id", ParseUUIDPipe) id: string): Promise<UserTariff> {
+    return await this.userTariffService.activateTariff(id);
   }
 
   @Delete(":id")

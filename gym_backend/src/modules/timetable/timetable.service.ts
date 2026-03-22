@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { DataSource, Repository } from "typeorm";
+import { DataSource, EntityManager, Repository } from "typeorm";
 import { TimetableEntry, Trainer } from "../../entities";
 import { CreateTimetableEntryDto } from "./dto/create-timetable-entry.dto";
 import { UpdateTimetableEntryDto } from "./dto/update-timetable-entry.dto";
@@ -24,19 +24,19 @@ export class TimetableService {
   async create(
     createTimetableEntryDto: CreateTimetableEntryDto,
   ): Promise<TimetableEntry> {
+    const trainer = await this.trainerRepository.findOne({
+      where: { id: createTimetableEntryDto.trainerId, isActive: true },
+    });
+
+    if (!trainer) {
+      throw new NotFoundException("Тренер не найден или не активен");
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const trainer = await queryRunner.manager.findOne(Trainer, {
-        where: { id: createTimetableEntryDto.trainerId, isActive: true },
-      });
-
-      if (!trainer) {
-        throw new NotFoundException("Тренер не найден или не активен");
-      }
-
       const hasConflict = await this.checkTrainerScheduleConflict(
         createTimetableEntryDto.trainerId,
         createTimetableEntryDto.date,
@@ -49,20 +49,37 @@ export class TimetableService {
         throw new ConflictException("У тренера уже есть занятие в это время");
       }
 
+      const enrolled = createTimetableEntryDto.enrolled ?? 0;
       const entry = queryRunner.manager.create(TimetableEntry, {
-        ...createTimetableEntryDto,
-        enrolled: createTimetableEntryDto.enrolled ?? 0,
+        type: createTimetableEntryDto.type,
+        trainerId: createTimetableEntryDto.trainerId,
+        hall: createTimetableEntryDto.hall,
+        date: new Date(createTimetableEntryDto.date),
+        startTime: createTimetableEntryDto.startTime,
+        endTime: createTimetableEntryDto.endTime,
+        capacity: createTimetableEntryDto.capacity,
+        enrolled,
         status: this.calculateStatus(
-          createTimetableEntryDto.enrolled ?? 0,
+          enrolled,
           createTimetableEntryDto.capacity,
         ),
         isActive: createTimetableEntryDto.isActive ?? true,
       });
 
-      await queryRunner.manager.save(entry);
+      const saved = await queryRunner.manager.save(entry);
       await queryRunner.commitTransaction();
 
-      return entry;
+      // Возвращаем с подгруженным тренером
+      const result = await this.timetableRepository.findOne({
+        where: { id: saved.id },
+        relations: ["trainer"],
+      });
+      if (!result) {
+        throw new NotFoundException(
+          `Не удалось загрузить созданное занятие с ID "${saved.id}"`,
+        );
+      }
+      return result!;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -82,15 +99,12 @@ export class TimetableService {
     if (filters?.date) {
       where.date = filters.date;
     }
-
     if (filters?.trainerId) {
-      where.trainer = { id: filters.trainerId };
+      where.trainerId = filters.trainerId; // ← используем FK-столбец
     }
-
     if (filters?.type) {
       where.type = filters.type;
     }
-
     if (filters?.hall) {
       where.hall = filters.hall;
     }
@@ -121,20 +135,44 @@ export class TimetableService {
   ): Promise<TimetableEntry> {
     const entry = await this.findOne(id);
 
+    // ← Проверка конфликта расписания при смене времени/даты/тренера
+    if (
+      updateTimetableEntryDto.date ||
+      updateTimetableEntryDto.startTime ||
+      updateTimetableEntryDto.endTime ||
+      updateTimetableEntryDto.trainerId
+    ) {
+      const trainerId = updateTimetableEntryDto.trainerId ?? entry.trainerId;
+      const date = updateTimetableEntryDto.date ?? entry.date.toString();
+      const startTime = updateTimetableEntryDto.startTime ?? entry.startTime;
+      const endTime = updateTimetableEntryDto.endTime ?? entry.endTime;
+
+      const hasConflict = await this.checkTrainerScheduleConflict(
+        trainerId,
+        date,
+        startTime,
+        endTime,
+        this.timetableRepository.manager,
+        id, // ← исключаем текущую запись
+      );
+
+      if (hasConflict) {
+        throw new ConflictException("У тренера уже есть занятие в это время");
+      }
+    }
+
     Object.assign(entry, updateTimetableEntryDto);
 
-    if (updateTimetableEntryDto.capacity || updateTimetableEntryDto.enrolled) {
+    if (
+      updateTimetableEntryDto.capacity !== undefined ||
+      updateTimetableEntryDto.enrolled !== undefined
+    ) {
       entry.status = this.calculateStatus(entry.enrolled, entry.capacity);
     }
 
     return await this.timetableRepository.save(entry);
   }
 
-  /**
-   * DELETE: Мягкое удаление занятия
-   * Бизнес-логика:
-   * - Нельзя удалять, если есть записавшиеся
-   */
   async remove(id: string): Promise<void> {
     const entry = await this.findOne(id);
 
@@ -151,15 +189,12 @@ export class TimetableService {
 
   async findByTrainer(trainerId: string): Promise<TimetableEntry[]> {
     return await this.timetableRepository.find({
-      where: { trainer: { id: trainerId }, isActive: true },
+      where: { trainerId, isActive: true },
       relations: ["trainer"],
       order: { date: "ASC", startTime: "ASC" },
     });
   }
 
-  /**
-   * Получить занятия по дате
-   */
   async findByDate(date: string): Promise<TimetableEntry[]> {
     return await this.timetableRepository.find({
       where: { date: new Date(date), isActive: true },
@@ -168,17 +203,23 @@ export class TimetableService {
     });
   }
 
-  async incrementEnrolled(id: string): Promise<TimetableEntry> {
-    const entry = await this.findOne(id);
+  async incrementEnrolled(
+    id: string,
+    manager?: EntityManager,
+  ): Promise<TimetableEntry> {
+    const repo = manager
+      ? manager.getRepository(TimetableEntry)
+      : this.timetableRepository;
 
+    const entry = await repo.findOne({ where: { id } });
+    if (!entry) throw new NotFoundException(`Занятие с ID "${id}" не найдено`);
     if (entry.enrolled >= entry.capacity) {
       throw new BadRequestException("Нет мест в группе");
     }
 
     entry.enrolled += 1;
     entry.status = this.calculateStatus(entry.enrolled, entry.capacity);
-
-    return await this.timetableRepository.save(entry);
+    return await repo.save(entry);
   }
 
   async decrementEnrolled(id: string): Promise<TimetableEntry> {
@@ -190,7 +231,6 @@ export class TimetableService {
 
     entry.enrolled -= 1;
     entry.status = this.calculateStatus(entry.enrolled, entry.capacity);
-
     return await this.timetableRepository.save(entry);
   }
 
@@ -200,17 +240,20 @@ export class TimetableService {
     startTime: string,
     endTime: string,
     manager: any,
+    excludeId?: string,
   ): Promise<boolean> {
     const existingEntries = await manager.find(TimetableEntry, {
       where: {
-        trainer: { id: trainerId },
+        trainerId,
         date,
         isActive: true,
-        status: "available",
+        status: EntryStatus.AVAILABLE,
       },
     });
 
     for (const existing of existingEntries) {
+      if (excludeId && existing.id === excludeId) continue;
+
       if (
         (startTime >= existing.startTime && startTime < existing.endTime) ||
         (endTime > existing.startTime && endTime <= existing.endTime) ||
