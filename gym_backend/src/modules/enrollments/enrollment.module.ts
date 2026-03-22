@@ -7,6 +7,7 @@ import {
   UserTariff,
 } from "../../entities";
 import { EnrollmentService } from "./enrollment.service";
+import { EnrollmentController } from "./enrollment.controller";
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { EnrollmentService } from "./enrollment.service";
       UserTariff,
     ]),
   ],
+  controllers: [EnrollmentController],
   providers: [EnrollmentService],
   exports: [EnrollmentService],
 })
-export class EnrollmentModule {}
+export class EnrollmentsModule {}

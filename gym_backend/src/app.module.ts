@@ -16,15 +16,23 @@ import {
   ClassEnrollment,
 } from "./entities";
 import { BookingsModule } from "./modules/bookings/bookings.module";
-import { EnrollmentModule } from "./modules/enrollments/enrollment.module";
+import { EnrollmentsModule } from "./modules/enrollments/enrollment.module";
 import { AssignTariffModule } from "./modules/user-tariff/assign-tariff.module";
+import { TrainersModule } from "./modules/trainers/trainers.module";
+import { TariffsModule } from "./modules/tariffs/tariff.module";
+import { TimetableModule } from "./modules/timetable/timetable.module";
+import { UsersModule } from "./modules/users/users.module";
 
 @Module({
   imports: [
     TerminusModule,
     BookingsModule,
-    EnrollmentModule,
+    EnrollmentsModule,
+    TrainersModule,
+    TariffsModule,
+    TimetableModule,
     AssignTariffModule,
+    UsersModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: "../.env",

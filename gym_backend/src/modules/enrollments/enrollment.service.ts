@@ -29,10 +29,6 @@ export class EnrollmentService {
     private enrollmentRepository: Repository<ClassEnrollment>,
     @InjectRepository(TimetableEntry)
     private timetableRepository: Repository<TimetableEntry>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(UserTariff)
-    private userTariffRepository: Repository<UserTariff>,
     private dataSource: DataSource,
   ) {}
 
@@ -183,5 +179,25 @@ export class EnrollmentService {
 
     enrollment.status = EnrollmentStatus.ATTENDED;
     return await this.enrollmentRepository.save(enrollment);
+  }
+
+  async findAll(): Promise<ClassEnrollment[]> {
+    return await this.enrollmentRepository.find({
+      relations: ["user", "timetableEntry", "timetableEntry.trainer"],
+      order: { createdAt: "DESC" },
+    });
+  }
+
+  async findOne(id: string): Promise<ClassEnrollment> {
+    const enrollment = await this.enrollmentRepository.findOne({
+      where: { id },
+      relations: ["user", "timetableEntry"],
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException("Запись не найдена");
+    }
+
+    return enrollment;
   }
 }

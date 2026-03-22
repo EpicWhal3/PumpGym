@@ -24,9 +24,6 @@ export class TimetableEntry {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ type: "varchar", length: 100, nullable: false })
-  title: string;
-
   @Column({ type: "enum", enum: WorkoutType })
   type: WorkoutType;
 

@@ -169,4 +169,23 @@ export class AssignTariffService {
     tariff.status = TariffState.ACTIVE;
     return await this.userTariffRepository.save(tariff);
   }
+
+  async findOne(id: string): Promise<UserTariff> {
+    const subscription = await this.userTariffRepository.findOne({
+      where: { id },
+      relations: ["subscription", "user"],
+    });
+
+    if (!subscription) {
+      throw new NotFoundException("Подписка не найдена");
+    }
+
+    return subscription;
+  }
+
+  async remove(id: string): Promise<void> {
+    const subscription = await this.findOne(id);
+    subscription.status = TariffState.EXPIRED;
+    await this.userTariffRepository.save(subscription);
+  }
 }
