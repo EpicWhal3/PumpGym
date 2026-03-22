@@ -18,6 +18,7 @@ import { TimetableModule } from "../timetable/timetable.module";
       User,
       UserTariff,
     ]),
+    TimetableModule,
   ],
   controllers: [EnrollmentController],
   providers: [EnrollmentService],
