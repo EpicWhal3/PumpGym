@@ -8,7 +8,6 @@ import { Booking, User } from "../../entities";
 import { Repository } from "typeorm";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { BookingStatus } from "../../common/enums/booking-status.enum";
-import { UpdateBookingDto } from "./dto/update-booking.dto";
 
 @Injectable()
 export class BookingsService {

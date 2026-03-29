@@ -96,10 +96,6 @@ export class EnrollmentService {
         timetableEntryId,
         queryRunner.manager,
       );
-      if (entry.enrolled >= entry.capacity) {
-        entry.status = EntryStatus.FULL;
-      }
-      await queryRunner.manager.save(entry);
 
       await queryRunner.commitTransaction();
       return enrollment;
@@ -152,12 +148,6 @@ export class EnrollmentService {
     await this.enrollmentRepository.save(enrollment);
 
     await this.timetableService.decrementEnrolled(enrollment.timetableEntry.id);
-    if (
-      enrollment.timetableEntry.enrolled < enrollment.timetableEntry.capacity
-    ) {
-      enrollment.timetableEntry.status = EntryStatus.AVAILABLE;
-    }
-    await this.timetableRepository.save(enrollment.timetableEntry);
   }
 
   async findByUser(userId: string): Promise<ClassEnrollment[]> {

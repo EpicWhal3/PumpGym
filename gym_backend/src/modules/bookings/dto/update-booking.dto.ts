@@ -1,10 +1,14 @@
-import { CreateBookingDto } from "./create-booking.dto";
-import { ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { IsEnum, IsNotEmpty } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { BookingStatus } from "../../../common/enums/booking-status.enum";
 
-export class UpdateBookingDto extends PartialType(CreateBookingDto) {
-  @ApiPropertyOptional({ description: "ID заявки (для обновления)" })
-  id?: string;
-
-  @ApiPropertyOptional({ description: "Изменение статуса заявки" })
-  status?: string;
+export class UpdateBookingStatusDto {
+  @ApiProperty({
+    description: "Новый статус заявки",
+    enum: BookingStatus,
+    example: BookingStatus.CONFIRMED,
+  })
+  @IsEnum(BookingStatus)
+  @IsNotEmpty()
+  status: BookingStatus;
 }

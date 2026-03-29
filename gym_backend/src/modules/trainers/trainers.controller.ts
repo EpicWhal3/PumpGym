@@ -56,6 +56,33 @@ export class TrainersController {
     return await this.trainersService.findAll(pagination);
   }
 
+  @Get("top-rated")
+  @ApiOperation({ summary: "Получить топ тренеров по рейтингу" })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Количество (по умолчанию 5)",
+  })
+  @ApiResponse({ status: 200, description: "Топ тренеров" })
+  async getTopRated(@Query("limit") limit?: number): Promise<Trainer[]> {
+    return await this.trainersService.getTopRated(limit ?? 5);
+  }
+
+  @Get("specialty/:specialty")
+  @ApiOperation({ summary: "Найти тренеров по специализации" })
+  @ApiParam({
+    name: "specialty",
+    description: "Специализация",
+    example: "Йога",
+  })
+  @ApiResponse({ status: 200, description: "Список тренеров" })
+  async findBySpecialty(
+    @Param("specialty") specialty: string,
+  ): Promise<Trainer[]> {
+    return await this.trainersService.findBySpecialty(specialty);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Получить тренера по ID" })
   @ApiParam({ name: "id", description: "UUID тренера" })
@@ -95,43 +122,5 @@ export class TrainersController {
   @ApiBearerAuth()
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.trainersService.remove(id);
-  }
-
-  @Delete(":id/hard")
-  @ApiOperation({ summary: "Полностью удалить тренера (для админа)" })
-  @ApiParam({ name: "id", description: "UUID тренера" })
-  @ApiResponse({ status: 204, description: "Тренер удалён" })
-  @ApiResponse({ status: 404, description: "Тренер не найден" })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
-  async hardDelete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
-    return await this.trainersService.hardDelete(id);
-  }
-
-  @Get("top-rated")
-  @ApiOperation({ summary: "Получить топ тренеров по рейтингу" })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Количество (по умолчанию 5)",
-  })
-  @ApiResponse({ status: 200, description: "Топ тренеров" })
-  async getTopRated(@Query("limit") limit?: number): Promise<Trainer[]> {
-    return await this.trainersService.getTopRated(limit ?? 5);
-  }
-
-  @Get("specialty/:specialty")
-  @ApiOperation({ summary: "Найти тренеров по специализации" })
-  @ApiParam({
-    name: "specialty",
-    description: "Специализация",
-    example: "Йога",
-  })
-  @ApiResponse({ status: 200, description: "Список тренеров" })
-  async findBySpecialty(
-    @Param("specialty") specialty: string,
-  ): Promise<Trainer[]> {
-    return await this.trainersService.findBySpecialty(specialty);
   }
 }

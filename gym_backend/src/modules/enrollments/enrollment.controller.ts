@@ -71,9 +71,7 @@ export class EnrollmentController {
       return await this.enrollmentService.findByUser(filters.userId);
     }
     if (filters.entryId) {
-      return await this.enrollmentService.findByTimetableEntry(
-        filters.entryId,
-      );
+      return await this.enrollmentService.findByTimetableEntry(filters.entryId);
     }
     return await this.enrollmentService.findAll();
   }
@@ -96,6 +94,11 @@ export class EnrollmentController {
   @Delete(":id")
   @ApiOperation({ summary: "Отменить запись на занятие" })
   @ApiParam({ name: "id", description: "UUID записи" })
+  @ApiQuery({
+    name: "userId",
+    required: true,
+    description: "UUID пользователя",
+  })
   @ApiResponse({ status: 204, description: "Запись отменена" })
   @ApiResponse({ status: 400, description: "Нельзя отменить" })
   @ApiResponse({ status: 404, description: "Запись не найдена" })
@@ -103,7 +106,7 @@ export class EnrollmentController {
   @ApiBearerAuth()
   async cancel(
     @Param("id", ParseUUIDPipe) id: string,
-    @Query("userId") userId: string,
+    @Query("userId", ParseUUIDPipe) userId: string,
   ): Promise<void> {
     return await this.enrollmentService.cancelEnrollment(userId, id);
   }

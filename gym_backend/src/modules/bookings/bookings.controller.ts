@@ -21,7 +21,7 @@ import {
 import { BookingsService } from "./bookings.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { Booking } from "../../entities";
-import { BookingStatus } from "../../common/enums/booking-status.enum";
+import { UpdateBookingStatusDto } from "./dto/update-booking.dto";
 
 @ApiTags("bookings")
 @Controller("bookings")
@@ -62,6 +62,17 @@ export class BookingsController {
     return await this.bookingsService.findAll();
   }
 
+  @Get("user/:userId")
+  @ApiOperation({ summary: "Получить заявки пользователя" })
+  @ApiParam({ name: "userId", description: "UUID пользователя" })
+  @ApiResponse({ status: 200, description: "Список заявок пользователя" })
+  @ApiBearerAuth()
+  async findByUser(
+    @Param("userId", ParseUUIDPipe) userId: string,
+  ): Promise<Booking[]> {
+    return await this.bookingsService.findByUser(userId);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Получить заявку по ID" })
   @ApiParam({ name: "id", description: "UUID заявки" })
@@ -73,17 +84,6 @@ export class BookingsController {
   @ApiResponse({ status: 404, description: "Заявка не найдена" })
   async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<Booking> {
     return await this.bookingsService.findOne(id);
-  }
-
-  @Get("user/:userId")
-  @ApiOperation({ summary: "Получить заявки пользователя" })
-  @ApiParam({ name: "userId", description: "UUID пользователя" })
-  @ApiResponse({ status: 200, description: "Список заявок пользователя" })
-  @ApiBearerAuth()
-  async findByUser(
-    @Param("userId", ParseUUIDPipe) userId: string,
-  ): Promise<Booking[]> {
-    return await this.bookingsService.findByUser(userId);
   }
 
   @Patch(":id/status")
@@ -99,9 +99,9 @@ export class BookingsController {
   @ApiBearerAuth()
   async updateStatus(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body("status") status: BookingStatus,
+    @Body() updateStatusDto: UpdateBookingStatusDto,
   ): Promise<Booking> {
-    return await this.bookingsService.updateStatus(id, status);
+    return await this.bookingsService.updateStatus(id, updateStatusDto.status);
   }
 
   @Delete(":id")
