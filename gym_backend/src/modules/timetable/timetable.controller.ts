@@ -62,6 +62,32 @@ export class TimetableController {
     return await this.timetableService.findAll(filters);
   }
 
+  @Get("trainer/:trainerId")
+  @ApiOperation({ summary: "Получить занятия по тренеру" })
+  @ApiParam({ name: "trainerId", description: "UUID тренера" })
+  @ApiResponse({
+    status: 200,
+    description: "Список занятий тренера",
+    type: [TimetableEntry],
+  })
+  async findByTrainer(
+    @Param("trainerId", ParseUUIDPipe) trainerId: string,
+  ): Promise<TimetableEntry[]> {
+    return await this.timetableService.findByTrainer(trainerId);
+  }
+
+  @Get("date/:date")
+  @ApiOperation({ summary: "Получить занятия по дате" })
+  @ApiParam({ name: "date", description: "Дата (например, 2026-03-23)" })
+  @ApiResponse({
+    status: 200,
+    description: "Список занятий по дате",
+    type: [TimetableEntry],
+  })
+  async findByDate(@Param("date") date: string): Promise<TimetableEntry[]> {
+    return await this.timetableService.findByDate(date);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Получить занятие по ID" })
   @ApiParam({ name: "id", description: "UUID занятия" })

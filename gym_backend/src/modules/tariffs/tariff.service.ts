@@ -79,6 +79,4 @@ export class TariffsService {
     tariff.isActive = false;
     await this.tariffsRepository.save(tariff);
   }
-
-  // TODO: Реализовать через подсчёт пользовательских подписок
 }

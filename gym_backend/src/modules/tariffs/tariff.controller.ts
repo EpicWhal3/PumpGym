@@ -56,7 +56,7 @@ export class TariffController {
     description: "Только активные тарифы (по умолчанию true)",
   })
   async findAll(@Query("activeOnly") activeOnly?: string): Promise<Tariff[]> {
-    const onlyActive = activeOnly !== "false"; // ← query params = строки
+    const onlyActive = activeOnly !== "false";
     return await this.tariffsService.findAll(onlyActive);
   }
 

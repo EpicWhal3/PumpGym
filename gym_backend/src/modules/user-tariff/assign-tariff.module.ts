@@ -8,6 +8,5 @@ import { UserTariffController } from "./user-tariff.controller";
   imports: [TypeOrmModule.forFeature([UserTariff, Tariff, User])],
   controllers: [UserTariffController],
   providers: [AssignTariffService],
-  exports: [AssignTariffService],
 })
 export class AssignTariffModule {}

@@ -22,6 +22,5 @@ import { TimetableModule } from "../timetable/timetable.module";
   ],
   controllers: [EnrollmentController],
   providers: [EnrollmentService],
-  exports: [EnrollmentService],
 })
 export class EnrollmentsModule {}

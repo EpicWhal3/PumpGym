@@ -69,7 +69,6 @@ export class TimetableService {
       const saved = await queryRunner.manager.save(entry);
       await queryRunner.commitTransaction();
 
-      // Возвращаем с подгруженным тренером
       const result = await this.timetableRepository.findOne({
         where: { id: saved.id },
         relations: ["trainer"],
@@ -100,7 +99,7 @@ export class TimetableService {
       where.date = filters.date;
     }
     if (filters?.trainerId) {
-      where.trainerId = filters.trainerId; // ← используем FK-столбец
+      where.trainerId = filters.trainerId;
     }
     if (filters?.type) {
       where.type = filters.type;
@@ -134,8 +133,6 @@ export class TimetableService {
     updateTimetableEntryDto: UpdateTimetableEntryDto,
   ): Promise<TimetableEntry> {
     const entry = await this.findOne(id);
-
-    // ← Проверка конфликта расписания при смене времени/даты/тренера
     if (
       updateTimetableEntryDto.date ||
       updateTimetableEntryDto.startTime ||
@@ -153,7 +150,7 @@ export class TimetableService {
         startTime,
         endTime,
         this.timetableRepository.manager,
-        id, // ← исключаем текущую запись
+        id,
       );
 
       if (hasConflict) {

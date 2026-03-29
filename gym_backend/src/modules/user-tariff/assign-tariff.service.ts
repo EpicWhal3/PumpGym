@@ -59,7 +59,7 @@ export class AssignTariffService {
   private async deactivateActiveTariff(userId: string): Promise<void> {
     const activeTariffs = await this.userTariffRepository.find({
       where: {
-        userId, // ← используем FK-столбец
+        userId,
         status: TariffState.ACTIVE,
       },
     });
@@ -76,7 +76,6 @@ export class AssignTariffService {
   async getActiveTariff(userId: string): Promise<UserTariff | null> {
     const now = new Date();
 
-    // ← Сначала проверяем просроченные тарифы и деактивируем
     const expiredTariffs = await this.userTariffRepository
       .createQueryBuilder("ut")
       .where("ut.userId = :userId", { userId })
@@ -91,7 +90,6 @@ export class AssignTariffService {
       await this.userTariffRepository.save(expiredTariffs);
     }
 
-    // ← Теперь ищем реально активный
     return await this.userTariffRepository.findOne({
       where: {
         userId,

@@ -52,11 +52,10 @@ export class UsersController {
   @ApiQuery({ name: "limit", required: false, type: Number, default: 10 })
   async findAll(
     @Query("role") role?: UserRole,
-    @Query("isActive") isActive?: string, // ← query params всегда строки
+    @Query("isActive") isActive?: string,
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ): Promise<User[]> {
-    // ← Исправлено: корректный парсинг boolean из строки
     const filters: { role?: UserRole; isActive?: boolean } = {};
     if (role) filters.role = role;
     if (isActive !== undefined) filters.isActive = isActive === "true";

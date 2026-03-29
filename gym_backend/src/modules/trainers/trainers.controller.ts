@@ -97,6 +97,17 @@ export class TrainersController {
     return await this.trainersService.remove(id);
   }
 
+  @Delete(":id/hard")
+  @ApiOperation({ summary: "Полностью удалить тренера (для админа)" })
+  @ApiParam({ name: "id", description: "UUID тренера" })
+  @ApiResponse({ status: 204, description: "Тренер удалён" })
+  @ApiResponse({ status: 404, description: "Тренер не найден" })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  async hardDelete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
+    return await this.trainersService.hardDelete(id);
+  }
+
   @Get("top-rated")
   @ApiOperation({ summary: "Получить топ тренеров по рейтингу" })
   @ApiQuery({
@@ -110,7 +121,6 @@ export class TrainersController {
     return await this.trainersService.getTopRated(limit ?? 5);
   }
 
-  // ← ДОБАВЛЕНО: поиск по специализации
   @Get("specialty/:specialty")
   @ApiOperation({ summary: "Найти тренеров по специализации" })
   @ApiParam({
