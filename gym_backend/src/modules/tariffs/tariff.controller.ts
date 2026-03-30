@@ -91,7 +91,7 @@ export class TariffController {
   }
 
   @Delete(":id")
-  @ApiOperation({ summary: "Удалить тариф (мягкое удаление)" })
+  @ApiOperation({ summary: "Делаем тариф неактивным" })
   @ApiParam({ name: "id", description: "UUID тарифа" })
   @ApiResponse({ status: 204, description: "Тариф удалён" })
   @ApiResponse({ status: 404, description: "Тариф не найден" })

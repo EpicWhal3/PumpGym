@@ -115,7 +115,7 @@ export class UsersController {
   }
 
   @Delete(":id")
-  @ApiOperation({ summary: "Деактивировать пользователя (мягкое удаление)" })
+  @ApiOperation({ summary: "Деактивировать пользователя" })
   @ApiParam({ name: "id", description: "UUID пользователя" })
   @ApiResponse({ status: 204, description: "Пользователь деактивирован" })
   @ApiResponse({ status: 404, description: "Пользователь не найден" })

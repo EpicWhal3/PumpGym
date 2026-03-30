@@ -111,7 +111,7 @@ export class TrainersController {
   }
 
   @Delete(":id")
-  @ApiOperation({ summary: "Удалить тренера (мягкое удаление)" })
+  @ApiOperation({ summary: "Деактивировать тренера)" })
   @ApiParam({ name: "id", description: "UUID тренера" })
   @ApiResponse({ status: 204, description: "Тренер удалён" })
   @ApiResponse({ status: 404, description: "Тренер не найден" })

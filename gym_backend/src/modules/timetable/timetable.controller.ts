@@ -121,7 +121,7 @@ export class TimetableController {
   }
 
   @Delete(":id")
-  @ApiOperation({ summary: "Удалить занятие (мягкое удаление)" })
+  @ApiOperation({ summary: "Сделать занятие неактивным" })
   @ApiParam({ name: "id", description: "UUID занятия" })
   @ApiResponse({ status: 204, description: "Занятие удалено" })
   @ApiResponse({ status: 404, description: "Занятие не найдено" })
