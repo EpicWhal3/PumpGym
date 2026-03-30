@@ -28,8 +28,6 @@ export class EnrollmentService {
   constructor(
     @InjectRepository(ClassEnrollment)
     private enrollmentRepository: Repository<ClassEnrollment>,
-    @InjectRepository(TimetableEntry)
-    private timetableRepository: Repository<TimetableEntry>,
     private timetableService: TimetableService,
     private dataSource: DataSource,
   ) {}
@@ -37,21 +35,17 @@ export class EnrollmentService {
   async enrollUser(
     createEnrollmentDto: CreateEnrollmentDto,
   ): Promise<ClassEnrollment> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.dataSource.transaction(async (manager) => {
       const { userId, timetableEntryId } = createEnrollmentDto;
 
-      const user = await queryRunner.manager.findOne(User, {
+      const user = await manager.findOne(User, {
         where: { id: userId },
       });
       if (!user) {
         throw new NotFoundException("Пользователь не найден");
       }
 
-      const entry = await queryRunner.manager.findOne(TimetableEntry, {
+      const entry = await manager.findOne(TimetableEntry, {
         where: { id: timetableEntryId },
         relations: ["trainer"],
       });
@@ -69,42 +63,30 @@ export class EnrollmentService {
         throw new BadRequestException("Нет мест в группе");
       }
 
-      const existingEnrollment = await queryRunner.manager.findOne(
-        ClassEnrollment,
-        {
-          where: {
-            user: { id: userId },
-            timetableEntry: { id: timetableEntryId },
-            status: EnrollmentStatus.CONFIRMED,
-          },
+      const existingEnrollment = await manager.findOne(ClassEnrollment, {
+        where: {
+          user: { id: userId },
+          timetableEntry: { id: timetableEntryId },
+          status: EnrollmentStatus.CONFIRMED,
         },
-      );
+      });
       if (existingEnrollment) {
         throw new BadRequestException("Вы уже записаны на это занятие");
       }
 
-      await this.checkActiveTariff(userId, queryRunner.manager);
+      await this.checkActiveTariff(userId, manager);
 
-      const enrollment = queryRunner.manager.create(ClassEnrollment, {
+      const enrollment = manager.create(ClassEnrollment, {
         user: { id: userId },
         timetableEntry: { id: timetableEntryId },
         status: EnrollmentStatus.CONFIRMED,
       });
-      await queryRunner.manager.save(enrollment);
+      await manager.save(enrollment);
 
-      await this.timetableService.incrementEnrolled(
-        timetableEntryId,
-        queryRunner.manager,
-      );
+      await this.timetableService.incrementEnrolled(timetableEntryId, manager);
 
-      await queryRunner.commitTransaction();
       return enrollment;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private async checkActiveTariff(

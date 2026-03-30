@@ -23,7 +23,6 @@ import { TrainersService } from "./trainers.service";
 import { CreateTrainerDto } from "./dto/create-trainer.dto";
 import { UpdateTrainerDto } from "./dto/update-trainer.dto";
 import { Trainer } from "../../entities";
-import { PaginationDto } from "../../common/dto/pagination.dto";
 
 @ApiTags("trainers")
 @Controller("trainers")
@@ -50,10 +49,8 @@ export class TrainersController {
     description: "Список тренеров",
     type: [Trainer],
   })
-  @ApiQuery({ name: "page", required: false, type: Number })
-  @ApiQuery({ name: "limit", required: false, type: Number })
-  async findAll(@Query() pagination: PaginationDto): Promise<Trainer[]> {
-    return await this.trainersService.findAll(pagination);
+  async findAll(): Promise<Trainer[]> {
+    return await this.trainersService.findAll();
   }
 
   @Get("top-rated")

@@ -1,13 +1,9 @@
-import {
-  Injectable,
-  NotFoundException
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Trainer } from "../../entities";
 import { CreateTrainerDto } from "./dto/create-trainer.dto";
 import { UpdateTrainerDto } from "./dto/update-trainer.dto";
-import { PaginationDto } from "../../common/dto/pagination.dto";
 
 @Injectable()
 export class TrainersService {
@@ -21,15 +17,10 @@ export class TrainersService {
     return await this.trainersRepository.save(trainer);
   }
 
-  async findAll(pagination?: PaginationDto): Promise<Trainer[]> {
-    const page = pagination?.page ?? 1;
-    const limit = pagination?.limit ?? 10;
-
+  async findAll(): Promise<Trainer[]> {
     return await this.trainersRepository.find({
       where: { isActive: true },
       order: { rating: "DESC", reviews: "DESC" },
-      skip: (page - 1) * limit,
-      take: limit,
     });
   }
 

@@ -45,11 +45,10 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
-  async findAll(
-    filters?: { role?: UserRole; isActive?: boolean },
-    page: number = 1,
-    limit: number = 10,
-  ): Promise<User[]> {
+  async findAll(filters?: {
+    role?: UserRole;
+    isActive?: boolean;
+  }): Promise<User[]> {
     const where: any = {};
 
     if (filters?.role) {
@@ -73,8 +72,6 @@ export class UsersService {
         "registrationDate",
       ],
       order: { registrationDate: "DESC" },
-      skip: (page - 1) * limit,
-      take: limit,
     });
   }
 

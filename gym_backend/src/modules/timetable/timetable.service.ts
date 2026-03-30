@@ -32,17 +32,13 @@ export class TimetableService {
       throw new NotFoundException("Тренер не найден или не активен");
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    const saved = await this.dataSource.transaction(async (manager) => {
       const hasConflict = await this.checkTrainerScheduleConflict(
         createTimetableEntryDto.trainerId,
         createTimetableEntryDto.date,
         createTimetableEntryDto.startTime,
         createTimetableEntryDto.endTime,
-        queryRunner.manager,
+        manager,
       );
 
       if (hasConflict) {
@@ -50,7 +46,7 @@ export class TimetableService {
       }
 
       const enrolled = createTimetableEntryDto.enrolled ?? 0;
-      const entry = queryRunner.manager.create(TimetableEntry, {
+      const entry = manager.create(TimetableEntry, {
         type: createTimetableEntryDto.type,
         trainerId: createTimetableEntryDto.trainerId,
         hall: createTimetableEntryDto.hall,
@@ -66,25 +62,21 @@ export class TimetableService {
         isActive: createTimetableEntryDto.isActive ?? true,
       });
 
-      const saved = await queryRunner.manager.save(entry);
-      await queryRunner.commitTransaction();
+      return await manager.save(entry);
+    });
 
-      const result = await this.timetableRepository.findOne({
-        where: { id: saved.id },
-        relations: ["trainer"],
-      });
-      if (!result) {
-        throw new NotFoundException(
-          `Не удалось загрузить созданное занятие с ID "${saved.id}"`,
-        );
-      }
-      return result!;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
+    const result = await this.timetableRepository.findOne({
+      where: { id: saved.id },
+      relations: ["trainer"],
+    });
+
+    if (!result) {
+      throw new NotFoundException(
+        `Не удалось загрузить созданное занятие с ID "${saved.id}"`,
+      );
     }
+
+    return result;
   }
 
   async findAll(filters?: {

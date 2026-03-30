@@ -48,19 +48,15 @@ export class UsersController {
   @ApiResponse({ status: 200, description: "Список пользователей" })
   @ApiQuery({ name: "role", required: false, enum: UserRole })
   @ApiQuery({ name: "isActive", required: false, type: Boolean })
-  @ApiQuery({ name: "page", required: false, type: Number, default: 1 })
-  @ApiQuery({ name: "limit", required: false, type: Number, default: 10 })
   async findAll(
     @Query("role") role?: UserRole,
     @Query("isActive") isActive?: string,
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
   ): Promise<User[]> {
     const filters: { role?: UserRole; isActive?: boolean } = {};
     if (role) filters.role = role;
     if (isActive !== undefined) filters.isActive = isActive === "true";
 
-    return await this.usersService.findAll(filters, +page, +limit);
+    return await this.usersService.findAll(filters);
   }
 
   @Get("email/:email")
