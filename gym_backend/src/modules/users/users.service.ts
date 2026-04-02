@@ -83,7 +83,6 @@ export class UsersService {
         "name",
         "email",
         "phone",
-        "role",
         "photoUrl",
         "isActive",
         "registrationDate",
@@ -101,7 +100,7 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     return await this.usersRepository.findOne({
       where: { email },
-      select: ["id", "name", "email", "phone", "role", "isActive"],
+      select: ["id", "name", "email", "phone", "isActive"],
     });
   }
 
@@ -145,7 +144,7 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
-  async hardDelete(id: string): Promise<void> {
+  async surge(id: string): Promise<void> {
     const result = await this.usersRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Пользователь с ID "${id}" не найден`);

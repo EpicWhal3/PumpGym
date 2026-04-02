@@ -131,7 +131,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "Пользователь не найден" })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  async hardDelete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
-    return await this.usersService.hardDelete(id);
+  async surge(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
+    return await this.usersService.surge(id);
   }
 }
