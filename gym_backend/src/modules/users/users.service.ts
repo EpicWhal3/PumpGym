@@ -133,6 +133,10 @@ export class UsersService {
       user.password = updateUserDto.password;
       delete updateUserDto.password;
     }
+    if (updateUserDto.name){
+      user.name = updateUserDto.name;
+      delete updateUserDto.name;
+    }
 
     Object.assign(user, updateUserDto);
     return await this.usersRepository.save(user);
