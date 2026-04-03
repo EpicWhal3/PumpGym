@@ -22,6 +22,9 @@ import { TrainersModule } from "./modules/trainers/trainers.module";
 import { TariffsModule } from "./modules/tariffs/tariff.module";
 import { TimetableModule } from "./modules/timetable/timetable.module";
 import { UsersModule } from "./modules/users/users.module";
+import { GraphQLModule } from "@nestjs/graphql";
+import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
+import { GraphqlModule } from "./graphql/graphql.module";
 
 @Module({
   imports: [
@@ -33,6 +36,7 @@ import { UsersModule } from "./modules/users/users.module";
     TimetableModule,
     AssignTariffModule,
     UsersModule,
+    GraphqlModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: "../.env",
@@ -59,6 +63,12 @@ import { UsersModule } from "./modules/users/users.module";
         synchronize: true,
         logging: configService.get("NODE_ENV") === "development",
       }),
+    }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: true,
+      sortSchema: true,
+      playground: true,
     }),
   ],
   controllers: [AppController, HealthController],

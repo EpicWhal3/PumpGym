@@ -1,0 +1,11 @@
+export { CreateUserInput } from "./create-user.input";
+export { UpdateUserInput } from "./update-user.input";
+export { CreateTrainerInput } from "./create-trainer.input";
+export { UpdateTrainerInput } from "./update-trainer.input";
+export { CreateTariffInput } from "./create-tariff.input";
+export { UpdateTariffInput } from "./update-tariff.input";
+export { AssignTariffInput } from "./assign-tariff.input";
+export { TimetableFilterInput } from "./timetable-filter.input";
+export { CreateBookingInput } from "./create-booking.input";
+export { UpdateBookingStatusInput } from "./update-booking-status.input";
+export { CreateEnrollmentInput } from "./create-enrollment.input";
