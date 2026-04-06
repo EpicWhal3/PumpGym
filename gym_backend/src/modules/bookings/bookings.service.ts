@@ -87,10 +87,6 @@ export class BookingsService {
     await this.updateStatus(id, BookingStatus.CANCELLED);
   }
 
-  async confirmBooking(id: string): Promise<void> {
-    await this.updateStatus(id, BookingStatus.CONFIRMED);
-  }
-
   async findByUser(userId: string): Promise<Booking[]> {
     return await this.bookingsRepository.find({
       where: { user: { id: userId } },

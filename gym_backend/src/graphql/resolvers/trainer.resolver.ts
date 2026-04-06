@@ -1,10 +1,15 @@
-import { Resolver, Query, Mutation, Args, ID, Int } from "@nestjs/graphql";
-import { TrainerType } from "../types/trainer.type";
 import {
-  CreateTrainerInput,
-  UpdateTrainerInput,
-} from "../inputs";
+  Resolver,
+  Query,
+  Args,
+  ID,
+  Int,
+  ResolveField,
+  Parent,
+} from "@nestjs/graphql";
+import { TrainerType } from "../types/trainer.type";
 import { TrainersService } from "../../modules/trainers/trainers.service";
+import { Trainer } from "../../entities";
 
 @Resolver(() => TrainerType)
 export class TrainerResolver {
@@ -45,31 +50,13 @@ export class TrainerResolver {
     return this.trainersService.findBySpecialty(specialty);
   }
 
-  @Mutation(() => TrainerType, {
-    name: "createTrainer",
-    description: "Создать тренера",
-  })
-  async createTrainer(@Args("input") input: CreateTrainerInput) {
-    return this.trainersService.create(input);
+  @ResolveField(() => String, { name: "name" })
+  getName(@Parent() trainer: Trainer): string | undefined {
+    return trainer.user?.name;
   }
 
-  @Mutation(() => TrainerType, {
-    name: "updateTrainer",
-    description: "Обновить тренера",
-  })
-  async updateTrainer(@Args("input") input: UpdateTrainerInput) {
-    const { id, ...data } = input;
-    return this.trainersService.update(id, data);
-  }
-
-  @Mutation(() => Boolean, {
-    name: "deactivateTrainer",
-    description: "Деактивировать тренера (мягкое удаление)",
-  })
-  async deactivateTrainer(
-    @Args("id", { type: () => ID }) id: string,
-  ): Promise<boolean> {
-    await this.trainersService.remove(id);
-    return true;
+  @ResolveField(() => String, { name: "name", nullable: true })
+  getPhotoUrl(@Parent() trainer: Trainer): string | undefined {
+    return trainer.user?.photoUrl;
   }
 }

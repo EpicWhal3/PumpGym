@@ -63,26 +63,4 @@ export class UserResolver {
     const { id, ...data } = input;
     return this.usersService.update(id, data);
   }
-
-  @Mutation(() => Boolean, {
-    name: "deactivateUser",
-    description: "Деактивировать пользователя (мягкое удаление)",
-  })
-  async deactivateUser(
-    @Args("id", { type: () => ID }) id: string,
-  ): Promise<boolean> {
-    await this.usersService.remove(id);
-    return true;
-  }
-
-  @Mutation(() => Boolean, {
-    name: "deleteUser",
-    description: "Полностью удалить пользователя",
-  })
-  async deleteUser(
-    @Args("id", { type: () => ID }) id: string,
-  ): Promise<boolean> {
-    await this.usersService.surge(id);
-    return true;
-  }
 }

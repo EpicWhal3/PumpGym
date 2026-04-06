@@ -1,6 +1,6 @@
 import { Resolver, Query, Mutation, Args, ID } from "@nestjs/graphql";
 import { BookingType } from "../types/booking.type";
-import { CreateBookingInput, UpdateBookingStatusInput } from "../inputs";
+import { CreateBookingInput } from "../inputs";
 import { BookingsService } from "../../modules/bookings/bookings.service";
 import { BookingStatus } from "../../common/enums/booking-status.enum";
 
@@ -40,17 +40,10 @@ export class BookingResolver {
     return this.bookingsService.createBooking(input);
   }
 
-  @Mutation(() => BookingType, {
-    name: "updateBookingStatus",
-    description: "Изменить статус заявки",
-  })
-  async updateBookingStatus(@Args("input") input: UpdateBookingStatusInput) {
-    return this.bookingsService.updateStatus(input.id, input.status);
-  }
-
+  
   @Mutation(() => BookingType, {
     name: "cancelBooking",
-    description: "Отменить заявку",
+    description: "Отменить свою заявку",
   })
   async cancelBooking(@Args("id", { type: () => ID }) id: string) {
     return this.bookingsService.updateStatus(id, BookingStatus.CANCELLED);

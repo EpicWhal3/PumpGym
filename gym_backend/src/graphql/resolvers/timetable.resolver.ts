@@ -25,4 +25,22 @@ export class TimetableResolver {
   async getTimetableEntry(@Args("id", { type: () => ID }) id: string) {
     return this.timetableService.findOne(id);
   }
+
+  @Query(() => [TimetableEntryType], {
+    name: "timetableByTrainer",
+    description: "Получить расписание тренера",
+  })
+  async getTimetableByTrainer(
+    @Args("trainerId", { type: () => ID }) trainerId: string,
+  ) {
+    return this.timetableService.findByTrainer(trainerId);
+  }
+
+  @Query(() => [TimetableEntryType], {
+    name: "timetableByDate",
+    description: "Получить расписание на дату",
+  })
+  async getTimetableByDate(@Args("date") date: string) {
+    return this.timetableService.findByDate(date);
+  }
 }

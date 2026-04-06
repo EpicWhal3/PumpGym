@@ -25,7 +25,6 @@ export class Tariff {
   @Column({ type: "jsonb", nullable: true })
   restrictions: {
     timeOfDay?: "10:00-18:00" | "any";
-    sessionsPerMonth?: number;
   };
 
   @Column({ type: "boolean", default: true })

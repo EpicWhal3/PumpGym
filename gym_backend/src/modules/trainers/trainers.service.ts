@@ -1,25 +1,70 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { Trainer } from "../../entities";
+import { Trainer, User } from "../../entities";
 import { CreateTrainerDto } from "./dto/create-trainer.dto";
 import { UpdateTrainerDto } from "./dto/update-trainer.dto";
+import { UserRole } from "../../common/enums/user-roles.enum";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class TrainersService {
   constructor(
+    @InjectRepository(User)
     @InjectRepository(Trainer)
     private trainersRepository: Repository<Trainer>,
+    private usersService: UsersService,
   ) {}
 
-  async create(createTrainerDto: CreateTrainerDto): Promise<Trainer> {
-    const trainer = this.trainersRepository.create(createTrainerDto);
+  async create(dto: CreateTrainerDto): Promise<Trainer> {
+    let user: User;
+
+    if (dto.userId) {
+      user = await this.usersService.findOne(dto.userId);
+
+      if (user.trainer) {
+        throw new ConflictException("Пользователь уже является тренером");
+      }
+
+      await this.usersService.update(user.id, {
+        role: UserRole.TRAINER,
+        photoUrl: dto.photoUrl ?? user.photoUrl,
+      });
+
+      user = await this.usersService.findOne(user.id);
+    } else {
+      user = await this.usersService.create({
+        name: dto.name!,
+        email: dto.email!,
+        phone: dto.phone!,
+        password: dto.password!,
+        role: UserRole.TRAINER,
+        photoUrl: dto.photoUrl,
+      });
+    }
+
+    const trainer = this.trainersRepository.create({
+      userId: user.id,
+      user,
+      specialty: dto.specialty,
+      experience: dto.experience,
+      bio: dto.bio,
+      rating: dto.rating,
+      reviews: dto.reviews ?? 0,
+      isActive: dto.isActive ?? true,
+    });
+
     return await this.trainersRepository.save(trainer);
   }
 
   async findAll(): Promise<Trainer[]> {
     return await this.trainersRepository.find({
       where: { isActive: true },
+      relations: ["user"],
       order: { rating: "DESC", reviews: "DESC" },
     });
   }
@@ -27,7 +72,7 @@ export class TrainersService {
   async findOne(id: string): Promise<Trainer> {
     const trainer = await this.trainersRepository.findOne({
       where: { id, isActive: true },
-      relations: ["timetableEntries"],
+      relations: ["user", "timetableEntries"],
     });
 
     if (!trainer) {

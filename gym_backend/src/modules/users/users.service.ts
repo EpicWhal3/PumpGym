@@ -83,11 +83,12 @@ export class UsersService {
         "name",
         "email",
         "phone",
+        "role",
         "photoUrl",
         "isActive",
         "registrationDate",
       ],
-      relations: ["tariffs", "bookings", "enrollments"],
+      relations: ["trainer","tariffs", "bookings", "enrollments"],
     });
 
     if (!user) {
@@ -100,7 +101,7 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     return await this.usersRepository.findOne({
       where: { email },
-      select: ["id", "name", "email", "phone", "isActive"],
+      select: ["id", "name", "email", "role", "phone", "isActive"],
     });
   }
 

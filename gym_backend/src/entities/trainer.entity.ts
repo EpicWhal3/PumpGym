@@ -1,13 +1,25 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { TimetableEntry } from "./timetable-entry.entity";
+import { User } from "./user.entity";
 
 @Entity("trainers")
 export class Trainer {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ type: "varchar", length: 100, nullable: false })
-  name: string;
+  @Column({ type: "uuid" })
+  userId: string;
+
+  @OneToOne(() => User, (user) => user.trainer)
+  @JoinColumn({ name: "userId" })
+  user: User;
 
   @Column({ type: "simple-array" })
   specialty: string[];
@@ -17,9 +29,6 @@ export class Trainer {
 
   @Column({ type: "text", nullable: true })
   bio: string;
-
-  @Column({ type: "varchar", length: 512, nullable: true })
-  photoUrl: string;
 
   @Column({ type: "decimal", precision: 3, scale: 2, nullable: true })
   rating: number;

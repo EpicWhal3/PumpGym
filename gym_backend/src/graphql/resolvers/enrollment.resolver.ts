@@ -9,7 +9,7 @@ export class EnrollmentResolver {
 
   @Query(() => [EnrollmentType], {
     name: "enrollments",
-    description: "Получить записи (фильтр по userId или entryId)",
+    description: "Получить записи на занятия",
   })
   async getEnrollments(
     @Args("userId", { type: () => ID, nullable: true }) userId?: string,
@@ -50,13 +50,5 @@ export class EnrollmentResolver {
   ): Promise<boolean> {
     await this.enrollmentService.cancelEnrollment(userId, enrollmentId);
     return true;
-  }
-
-  @Mutation(() => EnrollmentType, {
-    name: "markAttended",
-    description: "Отметить посещение",
-  })
-  async markAttended(@Args("id", { type: () => ID }) id: string) {
-    return this.enrollmentService.markAttended(id);
   }
 }

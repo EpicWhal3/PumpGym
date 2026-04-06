@@ -8,15 +8,58 @@ import {
   Max,
   IsBoolean,
   Length,
+  IsUUID,
+  ValidateIf,
+  IsEmail,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateTrainerDto {
-  @ApiProperty({ description: "Имя тренера", example: "Наталья Смирнова" })
+  @ApiPropertyOptional({
+    description: "UUID существующего пользователя (если уже зарегистрирован)",
+    example: "uuid-существующего-user",
+  })
+  @IsUUID()
+  @IsOptional()
+  userId?: string;
+
+  @ApiPropertyOptional({
+    description: "Имя тренера",
+    example: "Наталья Смирнова",
+  })
+  @ValidateIf((o) => !o.userId)
   @IsString()
   @IsNotEmpty()
   @Length(2, 100)
-  name: string;
+  name?: string;
+
+  @ApiPropertyOptional({ description: "Email", example: "natalia@gym.ru" })
+  @ValidateIf((o) => !o.userId)
+  @IsEmail()
+  @IsNotEmpty()
+  email?: string;
+
+  @ApiPropertyOptional({ description: "Телефон", example: "+79991234567" })
+  @ValidateIf((o) => !o.userId)
+  @IsString()
+  @IsNotEmpty()
+  @Length(10, 20)
+  phone?: string;
+
+  @ApiPropertyOptional({ description: "Пароль", example: "trainerPass123" })
+  @ValidateIf((o) => !o.userId)
+  @IsString()
+  @IsNotEmpty()
+  @Length(6, 255)
+  password?: string;
+
+  @ApiPropertyOptional({
+    description: "URL фотографии",
+    example: "/uploads/trainers/natalia.jpg",
+  })
+  @IsString()
+  @IsOptional()
+  photoUrl?: string;
 
   @ApiProperty({
     description: "Специализации",
@@ -41,14 +84,6 @@ export class CreateTrainerDto {
   @IsOptional()
   @Length(0, 1000)
   bio?: string;
-
-  @ApiPropertyOptional({
-    description: "URL фотографии",
-    example: "/uploads/trainers/anna.jpg",
-  })
-  @IsString()
-  @IsOptional()
-  photoUrl?: string;
 
   @ApiPropertyOptional({
     description: "Рейтинг (0-5)",
