@@ -14,7 +14,6 @@ import { UsersService } from "../users/users.service";
 @Injectable()
 export class TrainersService {
   constructor(
-    @InjectRepository(User)
     @InjectRepository(Trainer)
     private trainersRepository: Repository<Trainer>,
     private usersService: UsersService,
