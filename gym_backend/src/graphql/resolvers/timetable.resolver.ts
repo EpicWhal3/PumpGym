@@ -2,6 +2,7 @@ import { Resolver, Query, Args, ID } from "@nestjs/graphql";
 import { TimetableEntryType } from "../types/timetable-entry.type";
 import { TimetableFilterInput } from "../inputs";
 import { TimetableService } from "../../modules/timetable/timetable.service";
+import { Public } from "../../common/decorators/public.decorator";
 
 @Resolver(() => TimetableEntryType)
 export class TimetableResolver {
@@ -11,6 +12,7 @@ export class TimetableResolver {
     name: "timetable",
     description: "Получить расписание с фильтрами",
   })
+  @Public()
   async getTimetable(
     @Args("filters", { type: () => TimetableFilterInput, nullable: true })
     filters?: TimetableFilterInput,
@@ -22,6 +24,7 @@ export class TimetableResolver {
     name: "timetableEntry",
     description: "Получить занятие по ID",
   })
+  @Public()
   async getTimetableEntry(@Args("id", { type: () => ID }) id: string) {
     return this.timetableService.findOne(id);
   }
@@ -30,6 +33,7 @@ export class TimetableResolver {
     name: "timetableByTrainer",
     description: "Получить расписание тренера",
   })
+  @Public()
   async getTimetableByTrainer(
     @Args("trainerId", { type: () => ID }) trainerId: string,
   ) {
@@ -40,6 +44,7 @@ export class TimetableResolver {
     name: "timetableByDate",
     description: "Получить расписание на дату",
   })
+  @Public()
   async getTimetableByDate(@Args("date") date: string) {
     return this.timetableService.findByDate(date);
   }

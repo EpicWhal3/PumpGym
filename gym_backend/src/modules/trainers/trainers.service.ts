@@ -14,9 +14,10 @@ import { UsersService } from "../users/users.service";
 @Injectable()
 export class TrainersService {
   constructor(
-    @InjectRepository(User)
     @InjectRepository(Trainer)
     private trainersRepository: Repository<Trainer>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
     private usersService: UsersService,
   ) {}
 
@@ -24,7 +25,14 @@ export class TrainersService {
     let user: User;
 
     if (dto.userId) {
-      user = await this.usersService.findOne(dto.userId);
+      user = await this.usersRepository.findOne({
+        where: { id: dto.userId },
+        relations: ["trainer"],
+      }) as User;
+
+      if (!user) {
+        throw new NotFoundException("Пользователь не найден");
+      }
 
       if (user.trainer) {
         throw new ConflictException("Пользователь уже является тренером");
@@ -35,7 +43,7 @@ export class TrainersService {
         photoUrl: dto.photoUrl ?? user.photoUrl,
       });
 
-      user = await this.usersService.findOne(user.id);
+      user = await this.usersService.findAuthUserById(user.id);
     } else {
       user = await this.usersService.create({
         name: dto.name!,
@@ -82,10 +90,7 @@ export class TrainersService {
     return trainer;
   }
 
-  async update(
-    id: string,
-    updateTrainerDto: UpdateTrainerDto,
-  ): Promise<Trainer> {
+  async update(id: string, updateTrainerDto: UpdateTrainerDto): Promise<Trainer> {
     const trainer = await this.findOne(id);
 
     Object.assign(trainer, updateTrainerDto);
@@ -111,6 +116,7 @@ export class TrainersService {
   async findBySpecialty(specialty: string): Promise<Trainer[]> {
     return await this.trainersRepository
       .createQueryBuilder("trainer")
+      .leftJoinAndSelect("trainer.user", "user")
       .where("trainer.isActive = :isActive", { isActive: true })
       .andWhere("trainer.specialty LIKE :specialty", {
         specialty: `%${specialty}%`,
@@ -122,7 +128,8 @@ export class TrainersService {
   async getTopRated(limit: number = 5): Promise<Trainer[]> {
     return await this.trainersRepository.find({
       where: { isActive: true },
-      order: { rating: "DESC" },
+      relations: ["user"],
+      order: { rating: "DESC", reviews: "DESC" },
       take: limit,
     });
   }

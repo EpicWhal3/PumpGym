@@ -1,9 +1,11 @@
 import { Module } from "@nestjs/common";
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
+import { APP_GUARD } from "@nestjs/core";
+import { CacheModule } from "@nestjs/cache-manager";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { TerminusModule } from "@nestjs/terminus";
+import { GraphQLModule } from "@nestjs/graphql";
+import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
 import { HealthController } from "./health/health.controller";
 
 import {
@@ -22,24 +24,19 @@ import { TrainersModule } from "./modules/trainers/trainers.module";
 import { TariffsModule } from "./modules/tariffs/tariff.module";
 import { TimetableModule } from "./modules/timetable/timetable.module";
 import { UsersModule } from "./modules/users/users.module";
-import { GraphQLModule } from "@nestjs/graphql";
-import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
 import { GraphqlModule } from "./graphql/graphql.module";
+import { AuthModule } from "./modules/auth/auth.module";
+import { BffModule } from "./modules/bff/bff.module";
+import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
+import { RolesGuard } from "./common/guards/roles.guard";
 
 @Module({
   imports: [
     TerminusModule,
-    BookingsModule,
-    EnrollmentsModule,
-    TrainersModule,
-    TariffsModule,
-    TimetableModule,
-    AssignTariffModule,
-    UsersModule,
-    GraphqlModule,
+    CacheModule.register({ isGlobal: true, ttl: 60_000, max: 500 }),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: "../.env",
+      cache: true,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -69,9 +66,29 @@ import { GraphqlModule } from "./graphql/graphql.module";
       autoSchemaFile: true,
       sortSchema: true,
       playground: true,
+      context: ({ req }) => ({ req }),
     }),
+    AuthModule,
+    BffModule,
+    BookingsModule,
+    EnrollmentsModule,
+    TrainersModule,
+    TariffsModule,
+    TimetableModule,
+    AssignTariffModule,
+    UsersModule,
+    GraphqlModule,
   ],
-  controllers: [AppController, HealthController],
-  providers: [AppService],
+  controllers: [HealthController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

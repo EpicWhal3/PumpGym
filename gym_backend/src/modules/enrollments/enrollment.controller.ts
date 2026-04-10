@@ -21,13 +21,17 @@ import {
 import { EnrollmentService } from "./enrollment.service";
 import { CreateEnrollmentDto } from "./dto/create-enrollment.dto";
 import { ClassEnrollment } from "../../entities";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "../../common/enums/user-roles.enum";
 
 @ApiTags("enrollments")
 @Controller("enrollments")
+@ApiBearerAuth("JWT-auth")
 export class EnrollmentController {
   constructor(private readonly enrollmentService: EnrollmentService) {}
 
   @Post()
+  @Roles(UserRole.USER, UserRole.ADMIN)
   @ApiOperation({ summary: "Записаться на занятие" })
   @ApiResponse({
     status: 201,
@@ -39,7 +43,6 @@ export class EnrollmentController {
     status: 404,
     description: "Пользователь или занятие не найдены",
   })
-  @ApiBearerAuth()
   async create(
     @Body() createEnrollmentDto: CreateEnrollmentDto,
   ): Promise<ClassEnrollment> {
@@ -47,6 +50,7 @@ export class EnrollmentController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.TRAINER, UserRole.USER)
   @ApiOperation({ summary: "Получить список записей" })
   @ApiResponse({
     status: 200,
@@ -63,7 +67,6 @@ export class EnrollmentController {
     required: false,
     description: "Фильтр по занятию",
   })
-  @ApiBearerAuth()
   async findAll(
     @Query() filters: { userId?: string; entryId?: string },
   ): Promise<ClassEnrollment[]> {
@@ -77,6 +80,7 @@ export class EnrollmentController {
   }
 
   @Get(":id")
+  @Roles(UserRole.ADMIN, UserRole.TRAINER, UserRole.USER)
   @ApiOperation({ summary: "Получить запись по ID" })
   @ApiParam({ name: "id", description: "UUID записи" })
   @ApiResponse({
@@ -92,6 +96,7 @@ export class EnrollmentController {
   }
 
   @Delete(":id")
+  @Roles(UserRole.USER, UserRole.ADMIN)
   @ApiOperation({ summary: "Отменить запись на занятие" })
   @ApiParam({ name: "id", description: "UUID записи" })
   @ApiQuery({
@@ -103,7 +108,6 @@ export class EnrollmentController {
   @ApiResponse({ status: 400, description: "Нельзя отменить" })
   @ApiResponse({ status: 404, description: "Запись не найдена" })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
   async cancel(
     @Param("id", ParseUUIDPipe) id: string,
     @Query("userId", ParseUUIDPipe) userId: string,
@@ -112,6 +116,7 @@ export class EnrollmentController {
   }
 
   @Post(":id/attend")
+  @Roles(UserRole.TRAINER, UserRole.ADMIN)
   @ApiOperation({ summary: "Отметить посещение (для тренера)" })
   @ApiParam({ name: "id", description: "UUID записи" })
   @ApiResponse({
@@ -120,7 +125,6 @@ export class EnrollmentController {
     type: ClassEnrollment,
   })
   @ApiResponse({ status: 404, description: "Запись не найдена" })
-  @ApiBearerAuth()
   async markAttended(
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<ClassEnrollment> {

@@ -18,7 +18,7 @@ export class CreateUserInput {
   @Field(() => UserRole, {
     nullable: true,
     description: "Роль",
-    defaultValue: UserRole.CLIENT,
+    defaultValue: UserRole.USER,
   })
   role?: UserRole;
 

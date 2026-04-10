@@ -27,6 +27,8 @@ import { EnrollmentStatus } from "../common/enums/enrollments-status.enum";
 import { UserRole } from "../common/enums/user-roles.enum";
 import { TariffType } from "../common/enums/tariff-types.enum";
 import { TariffState } from "../common/enums/tariff-status.enum";
+import { AuthModule } from "../modules/auth/auth.module";
+import { AuthResolver } from "./resolvers";
 
 registerEnumType(WorkoutType, { name: "WorkoutType" });
 registerEnumType(EntryStatus, { name: "EntryStatus" });
@@ -39,6 +41,7 @@ registerEnumType(TariffState, { name: "TariffState" });
 
 @Module({
   imports: [
+    AuthModule,
     UsersModule,
     TrainersModule,
     TariffsModule,
@@ -48,6 +51,7 @@ registerEnumType(TariffState, { name: "TariffState" });
     EnrollmentsModule,
   ],
   providers: [
+    AuthResolver,
     UserResolver,
     TrainerResolver,
     TariffResolver,

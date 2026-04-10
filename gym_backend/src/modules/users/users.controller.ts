@@ -24,14 +24,17 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { User } from "../../entities";
 import { UserRole } from "../../common/enums/user-roles.enum";
+import { Roles } from "../../common/decorators/roles.decorator";
 
 @ApiTags("users")
 @Controller("users")
+@ApiBearerAuth("JWT-auth")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: "Создать нового пользователя" })
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "Создать нового пользователя (admin only)" })
   @ApiResponse({
     status: 201,
     description: "Пользователь успешно создан",
@@ -44,6 +47,7 @@ export class UsersController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Получить список пользователей" })
   @ApiResponse({ status: 200, description: "Список пользователей" })
   @ApiQuery({ name: "role", required: false, enum: UserRole })
@@ -60,6 +64,7 @@ export class UsersController {
   }
 
   @Get("email/:email")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Найти пользователя по email" })
   @ApiParam({ name: "email", description: "Email пользователя" })
   @ApiResponse({
@@ -73,6 +78,7 @@ export class UsersController {
   }
 
   @Get("role/:role")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Получить пользователей по роли" })
   @ApiParam({ name: "role", description: "Роль пользователя", enum: UserRole })
   @ApiResponse({
@@ -85,6 +91,7 @@ export class UsersController {
   }
 
   @Get(":id")
+  @Roles(UserRole.ADMIN, UserRole.USER, UserRole.TRAINER)
   @ApiOperation({ summary: "Получить пользователя по ID" })
   @ApiParam({ name: "id", description: "UUID пользователя" })
   @ApiResponse({
@@ -98,6 +105,7 @@ export class UsersController {
   }
 
   @Patch(":id")
+  @Roles(UserRole.ADMIN, UserRole.USER, UserRole.TRAINER)
   @ApiOperation({ summary: "Обновить данные пользователя" })
   @ApiParam({ name: "id", description: "UUID пользователя" })
   @ApiResponse({
@@ -115,6 +123,7 @@ export class UsersController {
   }
 
   @Delete(":id")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Деактивировать пользователя" })
   @ApiParam({ name: "id", description: "UUID пользователя" })
   @ApiResponse({ status: 204, description: "Пользователь деактивирован" })
@@ -125,12 +134,12 @@ export class UsersController {
   }
 
   @Delete(":id/hard")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Полностью удалить пользователя (для админа)" })
   @ApiParam({ name: "id", description: "UUID пользователя" })
   @ApiResponse({ status: 204, description: "Пользователь удалён" })
   @ApiResponse({ status: 404, description: "Пользователь не найден" })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
   async surge(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.usersService.surge(id);
   }

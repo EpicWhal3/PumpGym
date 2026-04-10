@@ -23,6 +23,9 @@ import { TrainersService } from "./trainers.service";
 import { CreateTrainerDto } from "./dto/create-trainer.dto";
 import { UpdateTrainerDto } from "./dto/update-trainer.dto";
 import { Trainer } from "../../entities";
+import { Public } from "../../common/decorators/public.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "../../common/enums/user-roles.enum";
 
 @ApiTags("trainers")
 @Controller("trainers")
@@ -30,6 +33,7 @@ export class TrainersController {
   constructor(private readonly trainersService: TrainersService) {}
 
   @Post()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Создать нового тренера" })
   @ApiResponse({
     status: 201,
@@ -37,12 +41,13 @@ export class TrainersController {
     type: Trainer,
   })
   @ApiResponse({ status: 400, description: "Некорректные данные" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async create(@Body() createTrainerDto: CreateTrainerDto): Promise<Trainer> {
     return await this.trainersService.create(createTrainerDto);
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: "Получить список тренеров" })
   @ApiResponse({
     status: 200,
@@ -54,6 +59,7 @@ export class TrainersController {
   }
 
   @Get("top-rated")
+  @Public()
   @ApiOperation({ summary: "Получить топ тренеров по рейтингу" })
   @ApiQuery({
     name: "limit",
@@ -67,6 +73,7 @@ export class TrainersController {
   }
 
   @Get("specialty/:specialty")
+  @Public()
   @ApiOperation({ summary: "Найти тренеров по специализации" })
   @ApiParam({
     name: "specialty",
@@ -81,6 +88,7 @@ export class TrainersController {
   }
 
   @Get(":id")
+  @Public()
   @ApiOperation({ summary: "Получить тренера по ID" })
   @ApiParam({ name: "id", description: "UUID тренера" })
   @ApiResponse({
@@ -94,6 +102,7 @@ export class TrainersController {
   }
 
   @Patch(":id")
+  @Roles(UserRole.ADMIN, UserRole.TRAINER)
   @ApiOperation({ summary: "Обновить данные тренера" })
   @ApiParam({ name: "id", description: "UUID тренера" })
   @ApiResponse({
@@ -102,7 +111,7 @@ export class TrainersController {
     type: Trainer,
   })
   @ApiResponse({ status: 404, description: "Тренер не найден" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateTrainerDto: UpdateTrainerDto,
@@ -111,12 +120,13 @@ export class TrainersController {
   }
 
   @Delete(":id")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Деактивировать тренера)" })
   @ApiParam({ name: "id", description: "UUID тренера" })
   @ApiResponse({ status: 204, description: "Тренер удалён" })
   @ApiResponse({ status: 404, description: "Тренер не найден" })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.trainersService.remove(id);
   }

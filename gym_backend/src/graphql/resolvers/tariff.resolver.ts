@@ -1,6 +1,7 @@
 import { Resolver, Query, Args, ID } from "@nestjs/graphql";
 import { TariffObjectType } from "../types/tariff.type";
 import { TariffsService } from "../../modules/tariffs/tariff.service";
+import { Public } from "../../common/decorators/public.decorator";
 
 @Resolver(() => TariffObjectType)
 export class TariffResolver {
@@ -10,6 +11,7 @@ export class TariffResolver {
     name: "tariffs",
     description: "Получить список тарифов",
   })
+  @Public()
   async getTariffs(
     @Args("activeOnly", { nullable: true, defaultValue: true })
     activeOnly: boolean,
@@ -21,6 +23,7 @@ export class TariffResolver {
     name: "tariff",
     description: "Получить тариф по ID",
   })
+  @Public()
   async getTariff(@Args("id", { type: () => ID }) id: string) {
     return this.tariffsService.findOne(id);
   }

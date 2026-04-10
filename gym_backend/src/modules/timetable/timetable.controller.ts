@@ -23,6 +23,9 @@ import { TimetableService } from "./timetable.service";
 import { CreateTimetableEntryDto } from "./dto/create-timetable-entry.dto";
 import { UpdateTimetableEntryDto } from "./dto/update-timetable-entry.dto";
 import { TimetableEntry } from "../../entities";
+import { Public } from "../../common/decorators/public.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "../../common/enums/user-roles.enum";
 
 @ApiTags("timetable")
 @Controller("timetable")
@@ -30,6 +33,7 @@ export class TimetableController {
   constructor(private readonly timetableService: TimetableService) {}
 
   @Post()
+  @Roles(UserRole.ADMIN, UserRole.TRAINER)
   @ApiOperation({ summary: "Создать новое занятие в расписании" })
   @ApiResponse({
     status: 201,
@@ -37,7 +41,7 @@ export class TimetableController {
     type: TimetableEntry,
   })
   @ApiResponse({ status: 400, description: "Некорректные данные" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async create(
     @Body() createTimetableEntryDto: CreateTimetableEntryDto,
   ): Promise<TimetableEntry> {
@@ -45,6 +49,7 @@ export class TimetableController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: "Получить расписание с фильтрами" })
   @ApiResponse({
     status: 200,
@@ -63,6 +68,7 @@ export class TimetableController {
   }
 
   @Get("trainer/:trainerId")
+  @Public()
   @ApiOperation({ summary: "Получить занятия по тренеру" })
   @ApiParam({ name: "trainerId", description: "UUID тренера" })
   @ApiResponse({
@@ -77,6 +83,7 @@ export class TimetableController {
   }
 
   @Get("date/:date")
+  @Public()
   @ApiOperation({ summary: "Получить занятия по дате" })
   @ApiParam({ name: "date", description: "Дата (например, 2026-03-23)" })
   @ApiResponse({
@@ -89,6 +96,7 @@ export class TimetableController {
   }
 
   @Get(":id")
+  @Public()
   @ApiOperation({ summary: "Получить занятие по ID" })
   @ApiParam({ name: "id", description: "UUID занятия" })
   @ApiResponse({
@@ -104,6 +112,7 @@ export class TimetableController {
   }
 
   @Patch(":id")
+  @Roles(UserRole.ADMIN, UserRole.TRAINER)
   @ApiOperation({ summary: "Обновить занятие" })
   @ApiParam({ name: "id", description: "UUID занятия" })
   @ApiResponse({
@@ -112,7 +121,7 @@ export class TimetableController {
     type: TimetableEntry,
   })
   @ApiResponse({ status: 404, description: "Занятие не найдено" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateTimetableEntryDto: UpdateTimetableEntryDto,
@@ -121,12 +130,13 @@ export class TimetableController {
   }
 
   @Delete(":id")
+  @Roles(UserRole.ADMIN, UserRole.TRAINER)
   @ApiOperation({ summary: "Сделать занятие неактивным" })
   @ApiParam({ name: "id", description: "UUID занятия" })
   @ApiResponse({ status: 204, description: "Занятие удалено" })
   @ApiResponse({ status: 404, description: "Занятие не найдено" })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.timetableService.remove(id);
   }

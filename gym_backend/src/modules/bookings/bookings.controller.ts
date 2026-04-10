@@ -22,6 +22,9 @@ import { BookingsService } from "./bookings.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { Booking } from "../../entities";
 import { UpdateBookingStatusDto } from "./dto/update-booking.dto";
+import { Public } from "../../common/decorators/public.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "../../common/enums/user-roles.enum";
 
 @ApiTags("bookings")
 @Controller("bookings")
@@ -29,6 +32,7 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @Public()
   @ApiOperation({ summary: "Создать новую заявку на запись" })
   @ApiResponse({
     status: 201,
@@ -41,6 +45,7 @@ export class BookingsController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Получить список заявок" })
   @ApiResponse({
     status: 200,
@@ -57,16 +62,17 @@ export class BookingsController {
     required: false,
     description: "Фильтр по статусу",
   })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async findAll(): Promise<Booking[]> {
     return await this.bookingsService.findAll();
   }
 
   @Get("user/:userId")
+  @Roles(UserRole.ADMIN, UserRole.USER)
   @ApiOperation({ summary: "Получить заявки пользователя" })
   @ApiParam({ name: "userId", description: "UUID пользователя" })
   @ApiResponse({ status: 200, description: "Список заявок пользователя" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async findByUser(
     @Param("userId", ParseUUIDPipe) userId: string,
   ): Promise<Booking[]> {
@@ -74,6 +80,7 @@ export class BookingsController {
   }
 
   @Get(":id")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Получить заявку по ID" })
   @ApiParam({ name: "id", description: "UUID заявки" })
   @ApiResponse({
@@ -82,11 +89,13 @@ export class BookingsController {
     type: Booking,
   })
   @ApiResponse({ status: 404, description: "Заявка не найдена" })
+  @ApiBearerAuth("JWT-auth")
   async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<Booking> {
     return await this.bookingsService.findOne(id);
   }
 
   @Patch(":id/status")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Изменить статус заявки" })
   @ApiParam({ name: "id", description: "UUID заявки" })
   @ApiResponse({
@@ -96,7 +105,7 @@ export class BookingsController {
   })
   @ApiResponse({ status: 400, description: "Недопустимый переход статуса" })
   @ApiResponse({ status: 404, description: "Заявка не найдена" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async updateStatus(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateStatusDto: UpdateBookingStatusDto,
@@ -105,11 +114,13 @@ export class BookingsController {
   }
 
   @Delete(":id")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Отменить заявку" })
   @ApiParam({ name: "id", description: "UUID заявки" })
   @ApiResponse({ status: 204, description: "Заявка отменена" })
   @ApiResponse({ status: 404, description: "Заявка не найдена" })
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth("JWT-auth")
   async cancel(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.bookingsService.cancelBooking(id);
   }

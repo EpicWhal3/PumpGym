@@ -10,6 +10,7 @@ import {
 import { TrainerType } from "../types/trainer.type";
 import { TrainersService } from "../../modules/trainers/trainers.service";
 import { Trainer } from "../../entities";
+import { Public } from "../../common/decorators/public.decorator";
 
 @Resolver(() => TrainerType)
 export class TrainerResolver {
@@ -19,6 +20,7 @@ export class TrainerResolver {
     name: "trainers",
     description: "Получить список тренеров",
   })
+  @Public()
   async getTrainers() {
     return this.trainersService.findAll();
   }
@@ -27,6 +29,7 @@ export class TrainerResolver {
     name: "trainer",
     description: "Получить тренера по ID",
   })
+  @Public()
   async getTrainer(@Args("id", { type: () => ID }) id: string) {
     return this.trainersService.findOne(id);
   }
@@ -35,6 +38,7 @@ export class TrainerResolver {
     name: "topRatedTrainers",
     description: "Получить топ тренеров по рейтингу",
   })
+  @Public()
   async getTopRated(
     @Args("limit", { type: () => Int, nullable: true, defaultValue: 5 })
     limit: number,
@@ -46,6 +50,7 @@ export class TrainerResolver {
     name: "trainersBySpecialty",
     description: "Найти тренеров по специализации",
   })
+  @Public()
   async getBySpecialty(@Args("specialty") specialty: string) {
     return this.trainersService.findBySpecialty(specialty);
   }
@@ -55,7 +60,7 @@ export class TrainerResolver {
     return trainer.user?.name;
   }
 
-  @ResolveField(() => String, { name: "name", nullable: true })
+  @ResolveField(() => String, { name: "photoUrl", nullable: true })
   getPhotoUrl(@Parent() trainer: Trainer): string | undefined {
     return trainer.user?.photoUrl;
   }

@@ -1,10 +1,13 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import * as cacheManager_1 from "cache-manager";
 import { DataSource, EntityManager, Repository } from "typeorm";
 import { TimetableEntry, Trainer } from "../../entities";
 import { CreateTimetableEntryDto } from "./dto/create-timetable-entry.dto";
@@ -19,6 +22,7 @@ export class TimetableService {
     @InjectRepository(Trainer)
     private trainerRepository: Repository<Trainer>,
     private dataSource: DataSource,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: cacheManager_1.Cache,
   ) {}
 
   async create(
@@ -65,18 +69,9 @@ export class TimetableService {
       return await manager.save(entry);
     });
 
-    const result = await this.timetableRepository.findOne({
-      where: { id: saved.id },
-      relations: ["trainer"],
-    });
+    await this.clearScheduleCache();
 
-    if (!result) {
-      throw new NotFoundException(
-        `Не удалось загрузить созданное занятие с ID "${saved.id}"`,
-      );
-    }
-
-    return result;
+    return this.findOne(saved.id);
   }
 
   async findAll(filters?: {
@@ -85,32 +80,37 @@ export class TimetableService {
     type?: string;
     hall?: string;
   }): Promise<TimetableEntry[]> {
-    const where: any = { isActive: true };
+    const query = this.timetableRepository
+      .createQueryBuilder("entry")
+      .leftJoinAndSelect("entry.trainer", "trainer")
+      .leftJoinAndSelect("trainer.user", "user")
+      .where("entry.isActive = :isActive", { isActive: true });
 
     if (filters?.date) {
-      where.date = filters.date;
+      query.andWhere("entry.date = :date", { date: filters.date });
     }
     if (filters?.trainerId) {
-      where.trainerId = filters.trainerId;
+      query.andWhere("entry.trainerId = :trainerId", {
+        trainerId: filters.trainerId,
+      });
     }
     if (filters?.type) {
-      where.type = filters.type;
+      query.andWhere("entry.type = :type", { type: filters.type });
     }
     if (filters?.hall) {
-      where.hall = filters.hall;
+      query.andWhere("entry.hall = :hall", { hall: filters.hall });
     }
 
-    return await this.timetableRepository.find({
-      where,
-      relations: ["trainer"],
-      order: { date: "ASC", startTime: "ASC" },
-    });
+    return await query
+      .orderBy("entry.date", "ASC")
+      .addOrderBy("entry.startTime", "ASC")
+      .getMany();
   }
 
   async findOne(id: string): Promise<TimetableEntry> {
     const entry = await this.timetableRepository.findOne({
       where: { id },
-      relations: ["trainer"],
+      relations: ["trainer", "trainer.user"],
     });
 
     if (!entry) {
@@ -132,7 +132,8 @@ export class TimetableService {
       updateTimetableEntryDto.trainerId
     ) {
       const trainerId = updateTimetableEntryDto.trainerId ?? entry.trainerId;
-      const date = updateTimetableEntryDto.date ?? entry.date.toString();
+      const date =
+        updateTimetableEntryDto.date ?? entry.date.toISOString().slice(0, 10);
       const startTime = updateTimetableEntryDto.startTime ?? entry.startTime;
       const endTime = updateTimetableEntryDto.endTime ?? entry.endTime;
 
@@ -152,6 +153,10 @@ export class TimetableService {
 
     Object.assign(entry, updateTimetableEntryDto);
 
+    if (updateTimetableEntryDto.date) {
+      entry.date = new Date(updateTimetableEntryDto.date);
+    }
+
     if (
       updateTimetableEntryDto.capacity !== undefined ||
       updateTimetableEntryDto.enrolled !== undefined
@@ -159,7 +164,9 @@ export class TimetableService {
       entry.status = this.calculateStatus(entry.enrolled, entry.capacity);
     }
 
-    return await this.timetableRepository.save(entry);
+    const saved = await this.timetableRepository.save(entry);
+    await this.clearScheduleCache();
+    return this.findOne(saved.id);
   }
 
   async remove(id: string): Promise<void> {
@@ -174,22 +181,15 @@ export class TimetableService {
     entry.isActive = false;
     entry.status = EntryStatus.CANCELLED;
     await this.timetableRepository.save(entry);
+    await this.clearScheduleCache();
   }
 
   async findByTrainer(trainerId: string): Promise<TimetableEntry[]> {
-    return await this.timetableRepository.find({
-      where: { trainerId, isActive: true },
-      relations: ["trainer"],
-      order: { date: "ASC", startTime: "ASC" },
-    });
+    return await this.findAll({ trainerId });
   }
 
   async findByDate(date: string): Promise<TimetableEntry[]> {
-    return await this.timetableRepository.find({
-      where: { date: new Date(date), isActive: true },
-      relations: ["trainer"],
-      order: { startTime: "ASC" },
-    });
+    return await this.findAll({ date });
   }
 
   async incrementEnrolled(
@@ -208,7 +208,11 @@ export class TimetableService {
 
     entry.enrolled += 1;
     entry.status = this.calculateStatus(entry.enrolled, entry.capacity);
-    return await repo.save(entry);
+    const saved = await repo.save(entry);
+    if (!manager) {
+      await this.clearScheduleCache();
+    }
+    return saved;
   }
 
   async decrementEnrolled(id: string): Promise<TimetableEntry> {
@@ -220,7 +224,9 @@ export class TimetableService {
 
     entry.enrolled -= 1;
     entry.status = this.calculateStatus(entry.enrolled, entry.capacity);
-    return await this.timetableRepository.save(entry);
+    const saved = await this.timetableRepository.save(entry);
+    await this.clearScheduleCache();
+    return saved;
   }
 
   private async checkTrainerScheduleConflict(
@@ -228,31 +234,22 @@ export class TimetableService {
     date: string,
     startTime: string,
     endTime: string,
-    manager: any,
+    manager: EntityManager,
     excludeId?: string,
   ): Promise<boolean> {
     const existingEntries = await manager.find(TimetableEntry, {
       where: {
         trainerId,
-        date,
+        date: new Date(date),
         isActive: true,
-        status: EntryStatus.AVAILABLE,
       },
     });
 
-    for (const existing of existingEntries) {
-      if (excludeId && existing.id === excludeId) continue;
-
-      if (
-        (startTime >= existing.startTime && startTime < existing.endTime) ||
-        (endTime > existing.startTime && endTime <= existing.endTime) ||
-        (startTime <= existing.startTime && endTime >= existing.endTime)
-      ) {
-        return true;
-      }
-    }
-
-    return false;
+    return existingEntries.some((existing) => {
+      if (excludeId && existing.id === excludeId) return false;
+      if (existing.status === EntryStatus.CANCELLED) return false;
+      return startTime < existing.endTime && endTime > existing.startTime;
+    });
   }
 
   private calculateStatus(enrolled: number, capacity: number): EntryStatus {
@@ -260,5 +257,12 @@ export class TimetableService {
       return EntryStatus.FULL;
     }
     return EntryStatus.AVAILABLE;
+  }
+
+  private async clearScheduleCache(): Promise<void> {
+    const store = this.cacheManager.stores?.[0] as any;
+    if (store?.reset) {
+      await store.reset();
+    }
   }
 }

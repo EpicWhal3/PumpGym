@@ -38,7 +38,7 @@ export class UsersService {
 
     const user = this.usersRepository.create({
       ...createUserDto,
-      role: createUserDto.role ?? UserRole.CLIENT,
+      role: createUserDto.role ?? UserRole.USER,
       isActive: createUserDto.isActive ?? true,
     });
 
@@ -49,7 +49,7 @@ export class UsersService {
     role?: UserRole;
     isActive?: boolean;
   }): Promise<User[]> {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (filters?.role) {
       where.role = filters.role;
@@ -88,7 +88,30 @@ export class UsersService {
         "isActive",
         "registrationDate",
       ],
-      relations: ["trainer","tariffs", "bookings", "enrollments"],
+      relations: ["trainer", "tariffs", "bookings", "enrollments"],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Пользователь с ID "${id}" не найден`);
+    }
+
+    return user;
+  }
+
+  async findAuthUserById(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id, isActive: true },
+      select: [
+        "id",
+        "name",
+        "email",
+        "phone",
+        "role",
+        "password",
+        "photoUrl",
+        "isActive",
+        "registrationDate",
+      ],
     });
 
     if (!user) {
@@ -105,10 +128,27 @@ export class UsersService {
     });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
+  async findByEmailWithPassword(email: string): Promise<User | null> {
+    return await this.usersRepository.findOne({
+      where: { email, isActive: true },
+      select: [
+        "id",
+        "name",
+        "email",
+        "phone",
+        "role",
+        "password",
+        "photoUrl",
+        "isActive",
+        "registrationDate",
+      ],
+    });
+  }
 
-    if (updateUserDto.email && updateUserDto.email !== user.email) {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const authUser = await this.findAuthUserById(id);
+
+    if (updateUserDto.email && updateUserDto.email !== authUser.email) {
       const existing = await this.usersRepository.findOne({
         where: { email: updateUserDto.email },
       });
@@ -119,7 +159,7 @@ export class UsersService {
       }
     }
 
-    if (updateUserDto.phone && updateUserDto.phone !== user.phone) {
+    if (updateUserDto.phone && updateUserDto.phone !== authUser.phone) {
       const existing = await this.usersRepository.findOne({
         where: { phone: updateUserDto.phone },
       });
@@ -130,21 +170,13 @@ export class UsersService {
       }
     }
 
-    if (updateUserDto.password) {
-      user.password = updateUserDto.password;
-      delete updateUserDto.password;
-    }
-    if (updateUserDto.name){
-      user.name = updateUserDto.name;
-      delete updateUserDto.name;
-    }
-
-    Object.assign(user, updateUserDto);
-    return await this.usersRepository.save(user);
+    Object.assign(authUser, updateUserDto);
+    await this.usersRepository.save(authUser);
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
-    const user = await this.findOne(id);
+    const user = await this.findAuthUserById(id);
     user.isActive = false;
     await this.usersRepository.save(user);
   }
@@ -159,7 +191,7 @@ export class UsersService {
   async findByRole(role: UserRole): Promise<User[]> {
     return await this.usersRepository.find({
       where: { role, isActive: true },
-      select: ["id", "name", "email", "phone", "photoUrl"],
+      select: ["id", "name", "email", "phone", "photoUrl", "role"],
     });
   }
 }

@@ -2,6 +2,8 @@ import { Resolver, Query, Mutation, Args, ID } from "@nestjs/graphql";
 import { EnrollmentType } from "../types/enrollment.type";
 import { CreateEnrollmentInput } from "../inputs";
 import { EnrollmentService } from "../../modules/enrollments/enrollment.service";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "../../common/enums/user-roles.enum";
 
 @Resolver(() => EnrollmentType)
 export class EnrollmentResolver {
@@ -11,6 +13,7 @@ export class EnrollmentResolver {
     name: "enrollments",
     description: "Получить записи на занятия",
   })
+  @Roles(UserRole.ADMIN, UserRole.TRAINER, UserRole.USER)
   async getEnrollments(
     @Args("userId", { type: () => ID, nullable: true }) userId?: string,
     @Args("entryId", { type: () => ID, nullable: true }) entryId?: string,
@@ -28,6 +31,7 @@ export class EnrollmentResolver {
     name: "enrollment",
     description: "Получить запись по ID",
   })
+  @Roles(UserRole.ADMIN, UserRole.TRAINER, UserRole.USER)
   async getEnrollment(@Args("id", { type: () => ID }) id: string) {
     return this.enrollmentService.findOne(id);
   }
@@ -36,6 +40,7 @@ export class EnrollmentResolver {
     name: "enrollUser",
     description: "Записаться на занятие",
   })
+  @Roles(UserRole.USER, UserRole.ADMIN)
   async enrollUser(@Args("input") input: CreateEnrollmentInput) {
     return this.enrollmentService.enrollUser(input);
   }
@@ -44,6 +49,7 @@ export class EnrollmentResolver {
     name: "cancelEnrollment",
     description: "Отменить запись на занятие",
   })
+  @Roles(UserRole.USER, UserRole.ADMIN)
   async cancelEnrollment(
     @Args("enrollmentId", { type: () => ID }) enrollmentId: string,
     @Args("userId", { type: () => ID }) userId: string,

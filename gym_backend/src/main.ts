@@ -1,30 +1,46 @@
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
-import { ValidationPipe } from "@nestjs/common";
+import { ValidationPipe, RequestMethod } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+
+  app.setGlobalPrefix("api", {
+    exclude: [{ path: "health", method: RequestMethod.GET }],
+  });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  const allowedOrigins = (process.env.CORE_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: [`http://localhost:3000`],
+    origins: allowedOrigins,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   });
 
   const config = new DocumentBuilder()
     .setTitle("PumpGym API")
-    .setDescription("REST API для фитнес-клуба PumpGym")
-    .setVersion("1.0")
+    .setDescription("REST API + GraphQL + BFF для фитнес-клуба PumpGym")
+    .setVersion("2.0")
+    .addTag("auth", "Аутентификация и регистрация")
+    .addTag("bff", "Frontend-oriented API")
     .addTag("trainers", "Операции с тренерами")
     .addTag("tariffs", "Операции с тарифами")
     .addTag("timetable", "Операции с расписанием")
     .addTag("bookings", "Операции с заявками")
     .addTag("enrollments", "Записи на занятия и оплаты")
-    .addTag(
-      "user-tariff",
-      "Текущий статус пользователя в системе по каждому из доступных ему тарифов.",
-    )
+    .addTag("user-tariff", "Подписки пользователей")
     .addBearerAuth(
       {
         type: "http",
@@ -40,9 +56,6 @@ async function bootstrap() {
   SwaggerModule.setup("api/docs", app, document);
 
   await app.listen(process.env.PORT ?? 3000, "0.0.0.0");
-  console.log(`Server running on port ${process.env.PORT ?? 3000}`);
 }
 
-bootstrap()
-  .then(() => console.log("Bootstrap completed"))
-  .catch((err) => console.error("Bootstrap failed", err));
+bootstrap().catch((err) => console.error("Bootstrap failed", err));

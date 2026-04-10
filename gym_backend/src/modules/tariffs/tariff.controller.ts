@@ -23,6 +23,9 @@ import { TariffsService } from "./tariff.service";
 import { CreateTariffDto } from "./dto/create-tariff.dto";
 import { UpdateTariffDto } from "./dto/update-tariff.dto";
 import { Tariff } from "../../entities";
+import { Public } from "../../common/decorators/public.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { UserRole } from "../../common/enums/user-roles.enum";
 
 @ApiTags("tariffs")
 @Controller("tariffs")
@@ -30,6 +33,7 @@ export class TariffController {
   constructor(private readonly tariffsService: TariffsService) {}
 
   @Post()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Создать новый тариф" })
   @ApiResponse({
     status: 201,
@@ -37,12 +41,13 @@ export class TariffController {
     type: Tariff,
   })
   @ApiResponse({ status: 400, description: "Некорректные данные" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async create(@Body() createTariffDto: CreateTariffDto): Promise<Tariff> {
     return await this.tariffsService.create(createTariffDto);
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: "Получить список тарифов" })
   @ApiResponse({
     status: 200,
@@ -61,6 +66,7 @@ export class TariffController {
   }
 
   @Get(":id")
+  @Public()
   @ApiOperation({ summary: "Получить тариф по ID" })
   @ApiParam({ name: "id", description: "UUID тарифа" })
   @ApiResponse({
@@ -74,6 +80,7 @@ export class TariffController {
   }
 
   @Patch(":id")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Обновить тариф" })
   @ApiParam({ name: "id", description: "UUID тарифа" })
   @ApiResponse({
@@ -82,7 +89,7 @@ export class TariffController {
     type: Tariff,
   })
   @ApiResponse({ status: 404, description: "Тариф не найден" })
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() updateTariffDto: UpdateTariffDto,
@@ -91,12 +98,13 @@ export class TariffController {
   }
 
   @Delete(":id")
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: "Делаем тариф неактивным" })
   @ApiParam({ name: "id", description: "UUID тарифа" })
   @ApiResponse({ status: 204, description: "Тариф удалён" })
   @ApiResponse({ status: 404, description: "Тариф не найден" })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     return await this.tariffsService.remove(id);
   }

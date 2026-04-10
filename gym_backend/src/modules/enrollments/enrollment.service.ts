@@ -1,10 +1,13 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import * as cacheManager_1 from "cache-manager";
 import {
   ClassEnrollment,
   TimetableEntry,
@@ -30,12 +33,13 @@ export class EnrollmentService {
     private enrollmentRepository: Repository<ClassEnrollment>,
     private timetableService: TimetableService,
     private dataSource: DataSource,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: cacheManager_1.Cache,
   ) {}
 
   async enrollUser(
     createEnrollmentDto: CreateEnrollmentDto,
   ): Promise<ClassEnrollment> {
-    return this.dataSource.transaction(async (manager) => {
+    const enrollment = await this.dataSource.transaction(async (manager) => {
       const { userId, timetableEntryId } = createEnrollmentDto;
 
       const user = await manager.findOne(User, {
@@ -53,13 +57,14 @@ export class EnrollmentService {
         throw new NotFoundException("Занятие не найдено");
       }
 
-      if (entry.status !== EntryStatus.AVAILABLE) {
-        const reason =
-          entry.status === EntryStatus.FULL ? "заполнено" : "отменено";
-        throw new BadRequestException(`Запись невозможна: занятие ${reason}`);
+      if (!entry.isActive || entry.status === EntryStatus.CANCELLED) {
+        throw new BadRequestException("Запись невозможна: занятие отменено");
       }
 
-      if (entry.enrolled >= entry.capacity) {
+      if (
+        entry.status === EntryStatus.FULL ||
+        entry.enrolled >= entry.capacity
+      ) {
         throw new BadRequestException("Нет мест в группе");
       }
 
@@ -76,17 +81,20 @@ export class EnrollmentService {
 
       await this.checkActiveTariff(userId, manager);
 
-      const enrollment = manager.create(ClassEnrollment, {
+      const enrollmentToSave = manager.create(ClassEnrollment, {
         user: { id: userId },
         timetableEntry: { id: timetableEntryId },
         status: EnrollmentStatus.CONFIRMED,
       });
-      await manager.save(enrollment);
+      await manager.save(enrollmentToSave);
 
       await this.timetableService.incrementEnrolled(timetableEntryId, manager);
 
-      return enrollment;
+      return enrollmentToSave;
     });
+
+    await this.clearScheduleCache();
+    return this.findOne(enrollment.id);
   }
 
   private async checkActiveTariff(
@@ -130,12 +138,18 @@ export class EnrollmentService {
     await this.enrollmentRepository.save(enrollment);
 
     await this.timetableService.decrementEnrolled(enrollment.timetableEntry.id);
+    await this.clearScheduleCache();
   }
 
   async findByUser(userId: string): Promise<ClassEnrollment[]> {
     return await this.enrollmentRepository.find({
       where: { user: { id: userId } },
-      relations: ["timetableEntry", "timetableEntry.trainer"],
+      relations: [
+        "user",
+        "timetableEntry",
+        "timetableEntry.trainer",
+        "timetableEntry.trainer.user",
+      ],
       order: { createdAt: "DESC" },
     });
   }
@@ -152,6 +166,7 @@ export class EnrollmentService {
   async markAttended(enrollmentId: string): Promise<ClassEnrollment> {
     const enrollment = await this.enrollmentRepository.findOne({
       where: { id: enrollmentId },
+      relations: ["user", "timetableEntry"],
     });
 
     if (!enrollment) {
@@ -170,7 +185,12 @@ export class EnrollmentService {
 
   async findAll(): Promise<ClassEnrollment[]> {
     return await this.enrollmentRepository.find({
-      relations: ["user", "timetableEntry", "timetableEntry.trainer"],
+      relations: [
+        "user",
+        "timetableEntry",
+        "timetableEntry.trainer",
+        "timetableEntry.trainer.user",
+      ],
       order: { createdAt: "DESC" },
     });
   }
@@ -178,7 +198,12 @@ export class EnrollmentService {
   async findOne(id: string): Promise<ClassEnrollment> {
     const enrollment = await this.enrollmentRepository.findOne({
       where: { id },
-      relations: ["user", "timetableEntry", "timetableEntry.trainer"],
+      relations: [
+        "user",
+        "timetableEntry",
+        "timetableEntry.trainer",
+        "timetableEntry.trainer.user",
+      ],
     });
 
     if (!enrollment) {
@@ -186,5 +211,12 @@ export class EnrollmentService {
     }
 
     return enrollment;
+  }
+
+  private async clearScheduleCache(): Promise<void> {
+    const store = this.cacheManager.stores?.[0] as any;
+    if (store?.reset) {
+      await store.reset();
+    }
   }
 }
