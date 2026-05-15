@@ -31,6 +31,11 @@ export class CreateBookingDto {
   @IsNotEmpty()
   serviceType: ServiceType;
 
+  @ApiPropertyOptional({ description: "ID предпочитаемого тренера" })
+  @IsString()
+  @IsOptional()
+  preferredTrainerId?: string;
+
   @ApiProperty({
     description: "Желаемая дата (YYYY-MM-DD)",
     example: "2025-07-01",

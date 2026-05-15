@@ -1,4 +1,4 @@
-import { InputType, Field } from "@nestjs/graphql";
+import { Field, InputType } from "@nestjs/graphql";
 import { WorkoutType } from "../../common/enums/workout-types.enum";
 
 @InputType()

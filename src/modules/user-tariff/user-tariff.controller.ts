@@ -1,28 +1,30 @@
 import {
+  Body,
   Controller,
-  Get,
-  Post,
-  Param,
   Delete,
-  ParseUUIDPipe,
-  Query,
+  Get,
   HttpCode,
   HttpStatus,
-  Body,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
 } from "@nestjs/common";
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
-  ApiResponse,
   ApiParam,
   ApiQuery,
-  ApiBearerAuth,
+  ApiResponse,
+  ApiTags,
 } from "@nestjs/swagger";
 import { AssignTariffService } from "./assign-tariff.service";
 import { AssignTariffDto } from "./dto/assign-tariff.dto";
 import { UserTariff } from "../../entities";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { UserRole } from "../../common/enums/user-roles.enum";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
 
 @ApiTags("user-tariff")
 @Controller("user-tariff")
@@ -58,6 +60,18 @@ export class UserTariffController {
   @ApiQuery({ name: "userId", required: true, description: "ID пользователя" })
   async findByUser(@Query("userId") userId: string): Promise<UserTariff[]> {
     return await this.userTariffService.findByUser(userId);
+  }
+
+  @Get("all")
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: "Получить все абонементы пользователей" })
+  @ApiResponse({
+    status: 200,
+    description: "Список абонементов пользователей",
+    type: [UserTariff],
+  })
+  async findAll(): Promise<UserTariff[]> {
+    return await this.userTariffService.findAll();
   }
 
   @Get("active")
@@ -100,6 +114,27 @@ export class UserTariffController {
   ): Promise<UserTariff> {
     const tariff = await this.userTariffService.findOne(id);
     return await this.userTariffService.renewTariff(tariff.userId, tariffId);
+  }
+
+  @Post(":id/cancel")
+  @Roles(UserRole.ADMIN, UserRole.USER)
+  @ApiOperation({ summary: "Отменить активный абонемент" })
+  @ApiParam({ name: "id", description: "UUID абонемента" })
+  @ApiResponse({
+    status: 200,
+    description: "Абонемент отменён",
+    type: UserTariff,
+  })
+  @ApiResponse({ status: 403, description: "Нельзя отменить чужой абонемент" })
+  async cancel(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<UserTariff> {
+    return await this.userTariffService.cancelTariff(
+      id,
+      user.id,
+      user.role === UserRole.ADMIN,
+    );
   }
 
   @Post(":id/suspend")

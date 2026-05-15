@@ -9,6 +9,7 @@ import {
 import { User } from "./user.entity";
 import { ServiceType } from "../common/enums/service-types.enum";
 import { BookingStatus } from "../common/enums/booking-status.enum";
+import { Trainer } from "./trainer.entity";
 
 @Entity("bookings")
 export class Booking {
@@ -30,6 +31,13 @@ export class Booking {
 
   @Column({ type: "enum", enum: ServiceType })
   serviceType: ServiceType;
+
+  @Column({ type: "uuid", name: "preferredTrainerId", nullable: true })
+  preferredTrainerId?: string | null;
+
+  @ManyToOne(() => Trainer, { nullable: true })
+  @JoinColumn({ name: "preferredTrainerId" })
+  preferredTrainer?: Trainer | null;
 
   @Column({ type: "date", nullable: false })
   preferredDate: Date;

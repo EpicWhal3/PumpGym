@@ -1,7 +1,7 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -9,6 +9,7 @@ import { User } from "../../entities";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UserRole } from "../../common/enums/user-roles.enum";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
 
 @Injectable()
 export class UsersService {
@@ -193,5 +194,51 @@ export class UsersService {
       where: { role, isActive: true },
       select: ["id", "name", "email", "phone", "photoUrl", "role"],
     });
+  }
+
+  async updateProfile(
+    id: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<User> {
+    const authUser = await this.findAuthUserById(id);
+
+    if (updateProfileDto.email && updateProfileDto.email !== authUser.email) {
+      const existing = await this.usersRepository.findOne({
+        where: { email: updateProfileDto.email },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          `Пользователь с email "${updateProfileDto.email}" уже существует`,
+        );
+      }
+    }
+
+    if (updateProfileDto.phone && updateProfileDto.phone !== authUser.phone) {
+      const existing = await this.usersRepository.findOne({
+        where: { phone: updateProfileDto.phone },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          `Пользователь с телефоном "${updateProfileDto.phone}" уже существует`,
+        );
+      }
+    }
+
+    Object.assign(authUser, updateProfileDto);
+    await this.usersRepository.save(authUser);
+
+    return this.findOne(id);
+  }
+
+  async updatePhotoUrl(id: string, photoUrl: string): Promise<User> {
+    const authUser = await this.findAuthUserById(id);
+
+    authUser.photoUrl = photoUrl;
+
+    await this.usersRepository.save(authUser);
+
+    return this.findOne(id);
   }
 }

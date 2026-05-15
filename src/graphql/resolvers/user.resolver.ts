@@ -1,4 +1,4 @@
-import { Resolver, Query, Args, ID } from "@nestjs/graphql";
+import { Args, ID, Query, Resolver } from "@nestjs/graphql";
 import { UserType } from "../types/user.type";
 import { UsersService } from "../../modules/users/users.service";
 import { UserRole } from "../../common/enums/user-roles.enum";

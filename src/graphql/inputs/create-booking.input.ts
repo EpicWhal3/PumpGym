@@ -1,4 +1,4 @@
-import { InputType, Field } from "@nestjs/graphql";
+import { Field, InputType } from "@nestjs/graphql";
 import { ServiceType } from "../../common/enums/service-types.enum";
 
 @InputType()

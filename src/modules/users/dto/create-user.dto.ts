@@ -1,10 +1,10 @@
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
+  IsBoolean,
   IsEmail,
   IsEnum,
-  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
   Length,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";

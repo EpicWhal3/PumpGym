@@ -1,12 +1,12 @@
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
   IsArray,
-  IsNumber,
-  Min,
   IsEnum,
+  IsNotEmpty,
+  IsNumber,
   IsObject,
+  IsOptional,
+  IsString,
+  Min,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { TariffType } from "../../../common/enums/tariff-types.enum";

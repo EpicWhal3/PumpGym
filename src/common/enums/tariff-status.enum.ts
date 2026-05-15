@@ -2,4 +2,5 @@ export enum TariffState {
   ACTIVE = "ACTIVE",
   EXPIRED = "EXPIRED",
   SUSPENDED = "SUSPENDED",
+  CANCELLED = "CANCELLED",
 }

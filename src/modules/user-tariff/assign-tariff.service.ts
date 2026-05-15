@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Tariff, User, UserTariff } from "../../entities";
 import { MoreThanOrEqual, Repository } from "typeorm";
@@ -56,23 +52,6 @@ export class AssignTariffService {
     return await this.userTariffRepository.save(newUserTariff);
   }
 
-  private async deactivateActiveTariff(userId: string): Promise<void> {
-    const activeTariffs = await this.userTariffRepository.find({
-      where: {
-        userId,
-        status: TariffState.ACTIVE,
-      },
-    });
-
-    for (const sub of activeTariffs) {
-      sub.status = TariffState.EXPIRED;
-    }
-
-    if (activeTariffs.length > 0) {
-      await this.userTariffRepository.save(activeTariffs);
-    }
-  }
-
   async getActiveTariff(userId: string): Promise<UserTariff | null> {
     const now = new Date();
 
@@ -97,6 +76,13 @@ export class AssignTariffService {
         endDate: MoreThanOrEqual(now),
       },
       relations: ["tariff"],
+    });
+  }
+
+  async findAll(): Promise<UserTariff[]> {
+    return await this.userTariffRepository.find({
+      relations: ["user", "tariff"],
+      order: { createdAt: "DESC" },
     });
   }
 
@@ -176,6 +162,26 @@ export class AssignTariffService {
     return await this.userTariffRepository.save(tariff);
   }
 
+  async cancelTariff(
+    id: string,
+    actorUserId: string,
+    isAdmin = false,
+  ): Promise<UserTariff> {
+    const tariff = await this.findOne(id);
+
+    if (!isAdmin && tariff.userId !== actorUserId) {
+      throw new ForbiddenException("Нельзя отменить чужой абонемент");
+    }
+
+    if (tariff.status !== TariffState.ACTIVE) {
+      throw new BadRequestException("Можно отменить только активный абонемент");
+    }
+
+    tariff.status = TariffState.CANCELLED;
+
+    return await this.userTariffRepository.save(tariff);
+  }
+
   async findOne(id: string): Promise<UserTariff> {
     const tariff = await this.userTariffRepository.findOne({
       where: { id },
@@ -191,7 +197,26 @@ export class AssignTariffService {
 
   async remove(id: string): Promise<void> {
     const tariff = await this.findOne(id);
-    tariff.status = TariffState.EXPIRED;
+
+    tariff.status = TariffState.CANCELLED;
+
     await this.userTariffRepository.save(tariff);
+  }
+
+  private async deactivateActiveTariff(userId: string): Promise<void> {
+    const activeTariffs = await this.userTariffRepository.find({
+      where: {
+        userId,
+        status: TariffState.ACTIVE,
+      },
+    });
+
+    for (const sub of activeTariffs) {
+      sub.status = TariffState.EXPIRED;
+    }
+
+    if (activeTariffs.length > 0) {
+      await this.userTariffRepository.save(activeTariffs);
+    }
   }
 }

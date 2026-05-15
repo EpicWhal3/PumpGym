@@ -1,22 +1,22 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Param,
+  Controller,
   Delete,
-  ParseUUIDPipe,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Patch,
+  Post,
 } from "@nestjs/common";
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
-  ApiResponse,
   ApiParam,
   ApiQuery,
-  ApiBearerAuth,
+  ApiResponse,
+  ApiTags,
 } from "@nestjs/swagger";
 import { BookingsService } from "./bookings.service";
 import { CreateBookingDto } from "./dto/create-booking.dto";

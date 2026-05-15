@@ -2,13 +2,22 @@ import { NestFactory } from "@nestjs/core";
 import { ValidationPipe, RequestMethod } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
+import { NestExpressApplication } from "@nestjs/platform-express";
+import { join } from "node:path";
+import { mkdirSync } from "node:fs";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix("api", {
     exclude: [{ path: "health", method: RequestMethod.GET }],
   });
+
+  const uploadsRoot = join(process.cwd(), "uploads");
+
+  mkdirSync(join(uploadsRoot, "avatars"), { recursive: true });
+
+  app.useStaticAssets(uploadsRoot, { prefix: "/uploads/" });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,20 +27,32 @@ async function bootstrap() {
     }),
   );
 
-  const allowedOrigins = (process.env.CORE_ORIGINS ?? "")
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? "")
     .split(",")
-    .map((o) => o.trim())
+    .map((o) => o.trim().replace(/\/$/, ""))
     .filter(Boolean);
 
   app.enableCors({
-    origins: allowedOrigins,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = origin.replace(/\/$/, "");
+
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     credentials: true,
+    allowedHeaders: "Content-Type,Authorization",
   });
 
   const config = new DocumentBuilder()
     .setTitle("PumpGym API")
-    .setDescription("REST API + GraphQL + BFF для фитнес-клуба PumpGym")
     .setVersion("2.0")
     .addTag("auth", "Аутентификация и регистрация")
     .addTag("bff", "Frontend-oriented API")
@@ -41,6 +62,7 @@ async function bootstrap() {
     .addTag("bookings", "Операции с заявками")
     .addTag("enrollments", "Записи на занятия и оплаты")
     .addTag("user-tariff", "Подписки пользователей")
+    .addTag("tariff-requests", "Запрос на оформление тарифа для пользователя")
     .addBearerAuth(
       {
         type: "http",

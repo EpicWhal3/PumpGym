@@ -1,11 +1,11 @@
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsNumber,
-  Min,
   IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
   IsUUID,
+  Min,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { WorkoutType } from "../../../common/enums/workout-types.enum";

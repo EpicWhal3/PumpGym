@@ -1,5 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Length } from "class-validator";
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+} from "class-validator";
 
 export class RegisterDto {
   @ApiProperty({ example: "Иван Иванов" })
@@ -24,7 +30,10 @@ export class RegisterDto {
   @Length(6, 255)
   password: string;
 
-  @ApiProperty({ required: false, example: "https://cdn.example.com/avatar.jpg" })
+  @ApiProperty({
+    required: false,
+    example: "https://cdn.example.com/avatar.jpg",
+  })
   @IsOptional()
   @IsString()
   photoUrl?: string;

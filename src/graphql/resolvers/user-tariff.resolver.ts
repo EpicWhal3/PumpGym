@@ -1,4 +1,4 @@
-import { Resolver, Query, Args, ID } from "@nestjs/graphql";
+import { Args, ID, Query, Resolver } from "@nestjs/graphql";
 import { UserTariffType } from "../types/user-tariff.type";
 import { AssignTariffService } from "../../modules/user-tariff/assign-tariff.service";
 import { Roles } from "../../common/decorators/roles.decorator";

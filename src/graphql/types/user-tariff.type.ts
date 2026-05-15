@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID } from "@nestjs/graphql";
+import { Field, ID, ObjectType } from "@nestjs/graphql";
 import { TariffState } from "../../common/enums/tariff-status.enum";
 import { UserType } from "./user.type";
 import { TariffObjectType } from "./tariff.type";

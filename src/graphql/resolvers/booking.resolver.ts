@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from "@nestjs/graphql";
+import { Args, ID, Mutation, Query, Resolver } from "@nestjs/graphql";
 import { BookingType } from "../types/booking.type";
 import { CreateBookingInput } from "../inputs";
 import { BookingsService } from "../../modules/bookings/bookings.service";
