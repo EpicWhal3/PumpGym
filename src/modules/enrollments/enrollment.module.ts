@@ -1,0 +1,27 @@
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import {
+  ClassEnrollment,
+  TimetableEntry,
+  User,
+  UserTariff,
+} from "../../entities";
+import { EnrollmentService } from "./enrollment.service";
+import { EnrollmentController } from "./enrollment.controller";
+import { TimetableModule } from "../timetable/timetable.module";
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      ClassEnrollment,
+      TimetableEntry,
+      User,
+      UserTariff,
+    ]),
+    TimetableModule,
+  ],
+  controllers: [EnrollmentController],
+  providers: [EnrollmentService],
+  exports: [EnrollmentService],
+})
+export class EnrollmentsModule {}
