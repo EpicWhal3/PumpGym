@@ -1,11 +1,11 @@
 import {
-  Resolver,
-  Query,
   Args,
   ID,
   Int,
-  ResolveField,
   Parent,
+  Query,
+  ResolveField,
+  Resolver,
 } from "@nestjs/graphql";
 import { TrainerType } from "../types/trainer.type";
 import { TrainersService } from "../../modules/trainers/trainers.service";

@@ -10,6 +10,7 @@ import { CreateTrainerDto } from "./dto/create-trainer.dto";
 import { UpdateTrainerDto } from "./dto/update-trainer.dto";
 import { UserRole } from "../../common/enums/user-roles.enum";
 import { UsersService } from "../users/users.service";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class TrainersService {
@@ -25,10 +26,10 @@ export class TrainersService {
     let user: User;
 
     if (dto.userId) {
-      user = await this.usersRepository.findOne({
+      user = (await this.usersRepository.findOne({
         where: { id: dto.userId },
         relations: ["trainer"],
-      }) as User;
+      })) as User;
 
       if (!user) {
         throw new NotFoundException("Пользователь не найден");
@@ -45,11 +46,12 @@ export class TrainersService {
 
       user = await this.usersService.findAuthUserById(user.id);
     } else {
+      const hashedPassword = await bcrypt.hash(dto.password!, 10);
       user = await this.usersService.create({
         name: dto.name!,
         email: dto.email!,
         phone: dto.phone!,
-        password: dto.password!,
+        password: hashedPassword,
         role: UserRole.TRAINER,
         photoUrl: dto.photoUrl,
       });
@@ -90,7 +92,10 @@ export class TrainersService {
     return trainer;
   }
 
-  async update(id: string, updateTrainerDto: UpdateTrainerDto): Promise<Trainer> {
+  async update(
+    id: string,
+    updateTrainerDto: UpdateTrainerDto,
+  ): Promise<Trainer> {
     const trainer = await this.findOne(id);
 
     Object.assign(trainer, updateTrainerDto);

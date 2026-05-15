@@ -1,9 +1,11 @@
-import { Resolver, Query, Mutation, Args, ID } from "@nestjs/graphql";
+import { Args, ID, Mutation, Query, Resolver } from "@nestjs/graphql";
 import { EnrollmentType } from "../types/enrollment.type";
 import { CreateEnrollmentInput } from "../inputs";
 import { EnrollmentService } from "../../modules/enrollments/enrollment.service";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { UserRole } from "../../common/enums/user-roles.enum";
+import { type AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 
 @Resolver(() => EnrollmentType)
 export class EnrollmentResolver {
@@ -40,9 +42,12 @@ export class EnrollmentResolver {
     name: "enrollUser",
     description: "Записаться на занятие",
   })
-  @Roles(UserRole.USER, UserRole.ADMIN)
-  async enrollUser(@Args("input") input: CreateEnrollmentInput) {
-    return this.enrollmentService.enrollUser(input);
+  @Roles(UserRole.USER, UserRole.TRAINER)
+  async enrollUser(
+    @Args("input") input: CreateEnrollmentInput,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.enrollmentService.enrollUser(input, currentUser);
   }
 
   @Mutation(() => Boolean, {

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Booking, User } from "../../entities";
+import { Booking, Trainer, User } from "../../entities";
 import { Repository } from "typeorm";
 import { CreateBookingDto } from "./dto/create-booking.dto";
 import { BookingStatus } from "../../common/enums/booking-status.enum";
@@ -14,8 +14,12 @@ export class BookingsService {
   constructor(
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
+
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+
+    @InjectRepository(Trainer)
+    private trainersRepository: Repository<Trainer>,
   ) {}
 
   async createBooking(createBookingDto: CreateBookingDto): Promise<Booking> {
@@ -23,8 +27,22 @@ export class BookingsService {
       const user = await this.usersRepository.findOne({
         where: { id: createBookingDto.userId },
       });
+
       if (!user) {
         throw new NotFoundException("Пользователь не найден");
+      }
+    }
+
+    if (createBookingDto.preferredTrainerId) {
+      const trainer = await this.trainersRepository.findOne({
+        where: {
+          id: createBookingDto.preferredTrainerId,
+          isActive: true,
+        },
+      });
+
+      if (!trainer) {
+        throw new NotFoundException("Выбранный тренер не найден или неактивен");
       }
     }
 
@@ -34,6 +52,9 @@ export class BookingsService {
       user: createBookingDto.userId
         ? { id: createBookingDto.userId }
         : undefined,
+      preferredTrainer: createBookingDto.preferredTrainerId
+        ? { id: createBookingDto.preferredTrainerId }
+        : undefined,
     });
 
     return await this.bookingsRepository.save(booking);
@@ -41,7 +62,7 @@ export class BookingsService {
 
   async findAll(): Promise<Booking[]> {
     return await this.bookingsRepository.find({
-      relations: ["user"],
+      relations: ["user", "preferredTrainer", "preferredTrainer.user"],
       order: { createdAt: "DESC" },
     });
   }
@@ -49,11 +70,13 @@ export class BookingsService {
   async findOne(id: string): Promise<Booking> {
     const booking = await this.bookingsRepository.findOne({
       where: { id },
-      relations: ["user"],
+      relations: ["user", "preferredTrainer", "preferredTrainer.user"],
     });
+
     if (!booking) {
       throw new NotFoundException(`Заявка с ID "${id}" не найдена`);
     }
+
     return booking;
   }
 
@@ -80,6 +103,7 @@ export class BookingsService {
     }
 
     booking.status = status;
+
     return await this.bookingsRepository.save(booking);
   }
 
@@ -90,6 +114,7 @@ export class BookingsService {
   async findByUser(userId: string): Promise<Booking[]> {
     return await this.bookingsRepository.find({
       where: { user: { id: userId } },
+      relations: ["preferredTrainer", "preferredTrainer.user"],
       order: { createdAt: "DESC" },
     });
   }

@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, Int } from "@nestjs/graphql";
+import { Field, ID, Int, ObjectType } from "@nestjs/graphql";
 import { WorkoutType } from "../../common/enums/workout-types.enum";
 import { EntryStatus } from "../../common/enums/entry-status.enum";
 import { TrainerType } from "./trainer.type";

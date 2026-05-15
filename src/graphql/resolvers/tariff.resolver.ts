@@ -1,4 +1,4 @@
-import { Resolver, Query, Args, ID } from "@nestjs/graphql";
+import { Args, ID, Query, Resolver } from "@nestjs/graphql";
 import { TariffObjectType } from "../types/tariff.type";
 import { TariffsService } from "../../modules/tariffs/tariff.service";
 import { Public } from "../../common/decorators/public.decorator";

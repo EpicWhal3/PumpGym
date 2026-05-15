@@ -1,23 +1,26 @@
 import {
-  Controller,
-  Get,
-  Post,
+  BadRequestException,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  ParseUUIDPipe,
-  Query,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseInterceptors,
 } from "@nestjs/common";
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
-  ApiResponse,
   ApiParam,
   ApiQuery,
-  ApiBearerAuth,
+  ApiResponse,
+  ApiTags,
 } from "@nestjs/swagger";
 import { UsersService } from "./users.service";
 import { CreateUserDto } from "./dto/create-user.dto";
@@ -25,6 +28,12 @@ import { UpdateUserDto } from "./dto/update-user.dto";
 import { User } from "../../entities";
 import { UserRole } from "../../common/enums/user-roles.enum";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
+import { extname, join } from "node:path";
+import { rename } from "node:fs/promises";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { FileInterceptor } from "@nestjs/platform-express";
 
 @ApiTags("users")
 @Controller("users")
@@ -102,6 +111,79 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "Пользователь не найден" })
   async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<User> {
     return await this.usersService.findOne(id);
+  }
+
+  @Get("me")
+  @Roles(UserRole.ADMIN, UserRole.USER, UserRole.TRAINER)
+  @ApiOperation({ summary: "Получить текущий профиль" })
+  @ApiResponse({
+    status: 200,
+    description: "Текущий пользователь",
+    type: User,
+  })
+  async getMe(@CurrentUser() user: AuthenticatedUser): Promise<User> {
+    return await this.usersService.findOne(user.id);
+  }
+
+  @Patch("me")
+  @Roles(UserRole.ADMIN, UserRole.USER, UserRole.TRAINER)
+  @ApiOperation({ summary: "Обновить текущий профиль" })
+  @ApiResponse({
+    status: 200,
+    description: "Профиль обновлён",
+    type: User,
+  })
+  @ApiResponse({ status: 409, description: "Email или телефон уже занят" })
+  async updateMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ): Promise<User> {
+    return await this.usersService.updateProfile(user.id, updateProfileDto);
+  }
+
+  @Post("me/photo")
+  @Roles(UserRole.ADMIN, UserRole.USER, UserRole.TRAINER)
+  @UseInterceptors(
+    FileInterceptor("photo", {
+      dest: "uploads/avatars",
+      limits: { fileSize: 2 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        const isImage = ["image/jpeg", "image/png", "image/webp"].includes(
+          file.mimetype,
+        );
+
+        callback(
+          isImage
+            ? null
+            : new BadRequestException("Поддерживаются только JPG, PNG и WEBP"),
+          isImage,
+        );
+      },
+    }),
+  )
+  @ApiOperation({ summary: "Загрузить фото текущего профиля" })
+  @ApiResponse({
+    status: 200,
+    description: "Фото профиля обновлено",
+    type: User,
+  })
+  async uploadMyPhoto(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file: any,
+  ): Promise<User> {
+    if (!file) {
+      throw new BadRequestException("Файл photo обязателен");
+    }
+
+    const ext = extname(file.originalname).toLowerCase();
+    const filename = `${file.filename}${ext}`;
+
+    await rename(file.path, join(file.destination, filename));
+
+    return await this.usersService.updatePhotoUrl(
+      user.id,
+      `/uploads/avatars/${filename}`,
+    );
   }
 
   @Patch(":id")

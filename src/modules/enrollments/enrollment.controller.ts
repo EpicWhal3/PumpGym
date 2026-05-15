@@ -1,28 +1,30 @@
 import {
+  Body,
   Controller,
-  Get,
-  Post,
-  Param,
   Delete,
-  ParseUUIDPipe,
-  Query,
+  Get,
   HttpCode,
   HttpStatus,
-  Body,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
 } from "@nestjs/common";
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
-  ApiResponse,
   ApiParam,
   ApiQuery,
-  ApiBearerAuth,
+  ApiResponse,
+  ApiTags,
 } from "@nestjs/swagger";
 import { EnrollmentService } from "./enrollment.service";
 import { CreateEnrollmentDto } from "./dto/create-enrollment.dto";
 import { ClassEnrollment } from "../../entities";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { UserRole } from "../../common/enums/user-roles.enum";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { type AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
 
 @ApiTags("enrollments")
 @Controller("enrollments")
@@ -31,22 +33,29 @@ export class EnrollmentController {
   constructor(private readonly enrollmentService: EnrollmentService) {}
 
   @Post()
-  @Roles(UserRole.USER, UserRole.ADMIN)
+  @Roles(UserRole.USER, UserRole.TRAINER)
   @ApiOperation({ summary: "Записаться на занятие" })
   @ApiResponse({
     status: 201,
     description: "Запись успешно создана",
     type: ClassEnrollment,
   })
-  @ApiResponse({ status: 400, description: "Нет мест или нет подписки" })
+  @ApiResponse({
+    status: 400,
+    description: "Нет мест или нет действующего тарифа",
+  })
   @ApiResponse({
     status: 404,
     description: "Пользователь или занятие не найдены",
   })
   async create(
     @Body() createEnrollmentDto: CreateEnrollmentDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
   ): Promise<ClassEnrollment> {
-    return await this.enrollmentService.enrollUser(createEnrollmentDto);
+    return await this.enrollmentService.enrollUser(
+      createEnrollmentDto,
+      currentUser,
+    );
   }
 
   @Get()

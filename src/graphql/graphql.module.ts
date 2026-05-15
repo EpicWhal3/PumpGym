@@ -2,13 +2,14 @@ import { Module } from "@nestjs/common";
 import { registerEnumType } from "@nestjs/graphql";
 
 import {
-  UserResolver,
-  TrainerResolver,
-  TariffResolver,
-  UserTariffResolver,
-  TimetableResolver,
+  AuthResolver,
   BookingResolver,
   EnrollmentResolver,
+  TariffResolver,
+  TimetableResolver,
+  TrainerResolver,
+  UserResolver,
+  UserTariffResolver,
 } from "./resolvers";
 
 import { UsersModule } from "../modules/users/users.module";
@@ -28,7 +29,6 @@ import { UserRole } from "../common/enums/user-roles.enum";
 import { TariffType } from "../common/enums/tariff-types.enum";
 import { TariffState } from "../common/enums/tariff-status.enum";
 import { AuthModule } from "../modules/auth/auth.module";
-import { AuthResolver } from "./resolvers";
 
 registerEnumType(WorkoutType, { name: "WorkoutType" });
 registerEnumType(EntryStatus, { name: "EntryStatus" });

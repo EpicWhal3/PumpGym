@@ -1,4 +1,4 @@
-import { InputType, Field } from "@nestjs/graphql";
+import { Field, InputType } from "@nestjs/graphql";
 import { UserRole } from "../../common/enums/user-roles.enum";
 
 @InputType()

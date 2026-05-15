@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID } from "@nestjs/graphql";
+import { Field, ID, ObjectType } from "@nestjs/graphql";
 import { ServiceType } from "../../common/enums/service-types.enum";
 import { BookingStatus } from "../../common/enums/booking-status.enum";
 import { UserType } from "./user.type";

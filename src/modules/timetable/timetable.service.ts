@@ -74,12 +74,7 @@ export class TimetableService {
     return this.findOne(saved.id);
   }
 
-  async findAll(filters?: {
-    date?: string;
-    trainerId?: string;
-    type?: string;
-    hall?: string;
-  }): Promise<TimetableEntry[]> {
+  async findAll(filters?: any): Promise<TimetableEntry[]> {
     const query = this.timetableRepository
       .createQueryBuilder("entry")
       .leftJoinAndSelect("entry.trainer", "trainer")
@@ -89,14 +84,17 @@ export class TimetableService {
     if (filters?.date) {
       query.andWhere("entry.date = :date", { date: filters.date });
     }
+
     if (filters?.trainerId) {
       query.andWhere("entry.trainerId = :trainerId", {
         trainerId: filters.trainerId,
       });
     }
+
     if (filters?.type) {
       query.andWhere("entry.type = :type", { type: filters.type });
     }
+
     if (filters?.hall) {
       query.andWhere("entry.hall = :hall", { hall: filters.hall });
     }

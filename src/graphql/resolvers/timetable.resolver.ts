@@ -1,4 +1,4 @@
-import { Resolver, Query, Args, ID } from "@nestjs/graphql";
+import { Args, ID, Query, Resolver } from "@nestjs/graphql";
 import { TimetableEntryType } from "../types/timetable-entry.type";
 import { TimetableFilterInput } from "../inputs";
 import { TimetableService } from "../../modules/timetable/timetable.service";

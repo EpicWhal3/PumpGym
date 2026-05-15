@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID } from "@nestjs/graphql";
+import { Field, ID, ObjectType } from "@nestjs/graphql";
 import { EnrollmentStatus } from "../../common/enums/enrollments-status.enum";
 import { UserType } from "./user.type";
 import { TimetableEntryType } from "./timetable-entry.type";

@@ -16,12 +16,14 @@ import {
   TimetableEntry,
   Booking,
   ClassEnrollment,
+  TariffRequest,
 } from "./entities";
 import { BookingsModule } from "./modules/bookings/bookings.module";
 import { EnrollmentsModule } from "./modules/enrollments/enrollment.module";
 import { AssignTariffModule } from "./modules/user-tariff/assign-tariff.module";
 import { TrainersModule } from "./modules/trainers/trainers.module";
 import { TariffsModule } from "./modules/tariffs/tariff.module";
+import { TariffRequestsModule } from "./modules/tariff-requests/tariff-requests.module";
 import { TimetableModule } from "./modules/timetable/timetable.module";
 import { UsersModule } from "./modules/users/users.module";
 import { GraphqlModule } from "./graphql/graphql.module";
@@ -56,6 +58,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
           TimetableEntry,
           Booking,
           ClassEnrollment,
+          TariffRequest,
         ],
         synchronize: true,
         logging: configService.get("NODE_ENV") === "development",
@@ -78,6 +81,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
     AssignTariffModule,
     UsersModule,
     GraphqlModule,
+    TariffRequestsModule,
   ],
   controllers: [HealthController],
   providers: [

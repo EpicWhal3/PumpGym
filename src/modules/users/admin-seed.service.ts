@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { User } from "../../entities";
@@ -7,18 +7,24 @@ import { ConfigService } from "@nestjs/config";
 import { UserRole } from "../../common/enums/user-roles.enum";
 
 @Injectable()
-export class AdminSeedService implements OnModuleInit {
+export class AdminSeedService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly configService: ConfigService,
   ) {}
 
-  async onModuleInit(){
+  async onApplicationBootstrap() {
     const adminEmail = this.configService.get<string>("ADMIN_EMAIL");
     const adminPassword = this.configService.get<string>("ADMIN_PASSWORD");
+    const adminName = this.configService.get<string>("ADMIN_NAME", "Admin");
+    const adminPhone = this.configService.get<string>(
+      "ADMIN_PHONE",
+      "+79990000000",
+    );
 
     if (!adminEmail || !adminPassword) {
+      console.log("ADMIN_EMAIL or ADMIN_PASSWORD is missing");
       return;
     }
 
@@ -27,15 +33,25 @@ export class AdminSeedService implements OnModuleInit {
     });
 
     if (existingAdmin) {
+      console.log("Admin already exists, updating password/role");
+
+      existingAdmin.name = adminName;
+      existingAdmin.phone = adminPhone;
+      existingAdmin.role = UserRole.ADMIN;
+      existingAdmin.isActive = true;
+      existingAdmin.password = await bcrypt.hash(adminPassword, 10);
+
+      await this.usersRepository.save(existingAdmin);
+      console.log(`Admin updated: ${adminEmail}`);
       return;
     }
 
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     const admin = this.usersRepository.create({
-      name: this.configService.get<string>("ADMIN_NAME", "Admin"),
+      name: adminName,
       email: adminEmail,
-      phone: this.configService.get<string>("ADMIN_PHONE", "+79990000000"),
+      phone: adminPhone,
       password: hashedPassword,
       role: UserRole.ADMIN,
       isActive: true,

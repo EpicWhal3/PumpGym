@@ -1,30 +1,16 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import * as cacheManager_1 from "cache-manager";
-import {
-  ClassEnrollment,
-  TimetableEntry,
-  User,
-  UserTariff,
-} from "../../entities";
-import {
-  DataSource,
-  EntityManager,
-  MoreThanOrEqual,
-  Repository,
-} from "typeorm";
+import { ClassEnrollment, TimetableEntry, User, UserTariff } from "../../entities";
+import { DataSource, EntityManager, MoreThanOrEqual, Repository } from "typeorm";
 import { CreateEnrollmentDto } from "./dto/create-enrollment.dto";
 import { EnrollmentStatus } from "../../common/enums/enrollments-status.enum";
 import { EntryStatus } from "../../common/enums/entry-status.enum";
 import { TariffState } from "../../common/enums/tariff-status.enum";
 import { TimetableService } from "../timetable/timetable.service";
+import { UserRole } from "../../common/enums/user-roles.enum";
+import { AuthenticatedUser } from "../../common/interfaces/authenticated-user.interface";
 
 @Injectable()
 export class EnrollmentService {
@@ -38,9 +24,27 @@ export class EnrollmentService {
 
   async enrollUser(
     createEnrollmentDto: CreateEnrollmentDto,
+    currentUser: AuthenticatedUser,
   ): Promise<ClassEnrollment> {
     const enrollment = await this.dataSource.transaction(async (manager) => {
       const { userId, timetableEntryId } = createEnrollmentDto;
+
+      if (currentUser?.role === UserRole.TRAINER) {
+        const entry = await manager.findOne(TimetableEntry, {
+          where: { id: timetableEntryId },
+          relations: ["trainer"],
+        });
+
+        if (!entry) {
+          throw new NotFoundException("Занятие не найдено");
+        }
+
+        if (entry.trainer?.userId === userId) {
+          throw new ForbiddenException(
+            "Тренеры не могут записываться на свои собственные занятия",
+          );
+        }
+      }
 
       const user = await manager.findOne(User, {
         where: { id: userId },
@@ -79,7 +83,9 @@ export class EnrollmentService {
         throw new BadRequestException("Вы уже записаны на это занятие");
       }
 
-      await this.checkActiveTariff(userId, manager);
+      if (user.role !== UserRole.TRAINER) {
+        await this.checkActiveTariff(userId, manager);
+      }
 
       const enrollmentToSave = manager.create(ClassEnrollment, {
         user: { id: userId },
@@ -95,27 +101,6 @@ export class EnrollmentService {
 
     await this.clearScheduleCache();
     return this.findOne(enrollment.id);
-  }
-
-  private async checkActiveTariff(
-    userId: string,
-    manager: EntityManager,
-  ): Promise<void> {
-    const now = new Date();
-
-    const activeTariff = await manager.findOne(UserTariff, {
-      where: {
-        userId,
-        status: TariffState.ACTIVE,
-        endDate: MoreThanOrEqual(now),
-      },
-    });
-
-    if (!activeTariff) {
-      throw new ForbiddenException(
-        "Для записи на занятие требуется действующий тариф",
-      );
-    }
   }
 
   async cancelEnrollment(userId: string, enrollmentId: string): Promise<void> {
@@ -211,6 +196,27 @@ export class EnrollmentService {
     }
 
     return enrollment;
+  }
+
+  private async checkActiveTariff(
+    userId: string,
+    manager: EntityManager,
+  ): Promise<void> {
+    const now = new Date();
+
+    const activeTariff = await manager.findOne(UserTariff, {
+      where: {
+        userId,
+        status: TariffState.ACTIVE,
+        endDate: MoreThanOrEqual(now),
+      },
+    });
+
+    if (!activeTariff) {
+      throw new ForbiddenException(
+        "Для записи на занятие требуется действующий тариф",
+      );
+    }
   }
 
   private async clearScheduleCache(): Promise<void> {
